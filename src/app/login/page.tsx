@@ -25,20 +25,27 @@ export default function LoginPage() {
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Complete sign-in if this is a magic link callback
   useEffect(() => {
-    if (isSignInWithEmailLink(auth, window.location.href)) {
+    if (typeof window !== 'undefined' && isSignInWithEmailLink(auth, window.location.href)) {
       let storedEmail = window.localStorage.getItem('emailForSignIn');
       if (!storedEmail) {
         storedEmail = window.prompt('Please provide your email for confirmation') || '';
       }
-      signInWithEmailLink(auth, storedEmail, window.location.href)
-        .then(() => {
-          window.localStorage.removeItem('emailForSignIn');
-          router.push('/');
-        })
-        .catch((err) => setError(err.message));
+      if (storedEmail) {
+        signInWithEmailLink(auth, storedEmail, window.location.href)
+          .then(() => {
+            window.localStorage.removeItem('emailForSignIn');
+            router.push('/');
+          })
+          .catch((err) => setError(err.message));
+      }
     }
   }, [router]);
 
@@ -62,70 +69,110 @@ export default function LoginPage() {
     }
   }
 
-  if (loading) {
+  if (!isMounted || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-950">
+      <div className="min-h-screen flex items-center justify-center bg-black">
         <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-10">
-          <h1 className="font-display text-4xl font-bold text-white mb-2">Antgravity</h1>
-          <p className="text-gray-400 text-sm tracking-widest uppercase">Event Management</p>
+    <div className="min-h-screen bg-black flex items-center justify-center p-6 selection:bg-white selection:text-black">
+      {/* Dynamic Background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-white/[0.03] blur-[120px] rounded-full animate-pulse" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[30%] h-[30%] bg-white/[0.02] blur-[100px] rounded-full" />
+      </div>
+
+      <div className="w-full max-w-lg relative animate-in fade-in zoom-in-95 duration-1000">
+        <div className="text-center mb-12 space-y-3">
+          <h1 className="font-display text-5xl font-bold text-white tracking-tighter">Antgravity</h1>
+          <div className="flex items-center justify-center gap-4">
+             <div className="h-px w-8 bg-white/20" />
+             <p className="text-[10px] text-gray-500 uppercase tracking-[0.5em] font-bold">Secure Access</p>
+             <div className="h-px w-8 bg-white/20" />
+          </div>
         </div>
 
-        {/* Card */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 shadow-2xl">
+        <div className="bg-white/[0.02] border border-white/5 backdrop-blur-3xl rounded-[3rem] overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)] p-12">
           {sent ? (
-            <div className="text-center">
-              <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-3xl">✉️</span>
+            <div className="text-center space-y-8 py-4">
+              <div className="relative inline-block">
+                <div className="absolute inset-0 bg-white/20 blur-2xl rounded-full" />
+                <div className="relative w-20 h-20 bg-white/[0.05] border border-white/10 rounded-3xl flex items-center justify-center text-4xl shadow-2xl">
+                  ✉️
+                </div>
               </div>
-              <h2 className="text-xl font-semibold mb-2">Check your inbox</h2>
-              <p className="text-gray-400 text-sm">
-                We sent a sign-in link to <span className="text-white font-medium">{email}</span>.
-                Click the link to access your dashboard.
-              </p>
+              
+              <div className="space-y-4">
+                <h2 className="text-2xl font-bold text-white tracking-tight">Check your identity</h2>
+                <p className="text-gray-500 text-sm font-medium leading-relaxed max-w-xs mx-auto">
+                  A magic link has been sent to <span className="text-white">{email}</span>. 
+                  Please check your inbox to authenticate.
+                </p>
+              </div>
+
+              <div className="pt-4">
+                <button 
+                  onClick={() => setSent(false)}
+                  className="text-[10px] text-gray-600 hover:text-white uppercase tracking-[0.2em] font-bold transition-colors"
+                >
+                  Change email address
+                </button>
+              </div>
             </div>
           ) : (
-            <>
-              <h2 className="text-xl font-semibold mb-1">Sign in</h2>
-              <p className="text-gray-400 text-sm mb-6">Enter your email to receive a magic sign-in link.</p>
+            <div className="space-y-10">
+              <div className="space-y-3">
+                <h2 className="text-2xl font-bold text-white tracking-tight">System Login</h2>
+                <p className="text-gray-500 text-sm font-medium">Enter your credentials to access the administrative control center.</p>
+              </div>
 
               {error && (
-                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4 text-red-400 text-sm">
-                  {error}
+                <div className="bg-red-500/5 border border-red-500/20 rounded-2xl p-4 text-red-400 text-xs font-medium animate-in slide-in-from-top-2">
+                  <span className="opacity-60 mr-2">Error:</span> {error}
                 </div>
               )}
 
-              <form onSubmit={handleSend} className="space-y-4">
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1.5 tracking-wide uppercase">Email address</label>
+              <form onSubmit={handleSend} className="space-y-8">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center px-1">
+                    <label className="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-bold">Registry Email</label>
+                  </div>
                   <input
                     type="email"
-                    placeholder="you@example.com"
+                    placeholder="authorized@antgravity.system"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     required
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition"
+                    className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-6 py-4 text-white placeholder-gray-700 outline-none focus:border-white/30 focus:bg-white/[0.05] transition-all duration-300"
                   />
                 </div>
+
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-medium py-3 px-4 rounded-lg transition"
+                  className="group relative w-full"
                 >
-                  {submitting ? 'Sending…' : 'Send sign-in link'}
+                  <div className="absolute inset-0 bg-white blur-lg opacity-0 group-hover:opacity-10 transition-opacity duration-500" />
+                  <div className="relative w-full bg-white text-black font-bold py-5 rounded-2xl transition-transform active:scale-[0.98] disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-3">
+                    {submitting ? (
+                      <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <span className="uppercase tracking-[0.1em] text-sm">Initialize Session</span>
+                        <span className="text-lg">→</span>
+                      </>
+                    )}
+                  </div>
                 </button>
               </form>
-            </>
+            </div>
           )}
         </div>
+        
+        <p className="text-center mt-12 text-[9px] text-gray-800 uppercase tracking-[0.5em] font-bold">ANTGRAVITY QUANTUM SECURITY</p>
       </div>
     </div>
   );
