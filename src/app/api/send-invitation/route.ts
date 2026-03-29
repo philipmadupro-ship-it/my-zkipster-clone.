@@ -6,7 +6,6 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const resend = new Resend(process.env.RESEND_API_KEY);
     const { guestId, campaignName, appUrl } = await req.json();
 
     if (!guestId) {
@@ -16,6 +15,8 @@ export async function POST(req: NextRequest) {
     if (!process.env.RESEND_API_KEY) {
       return NextResponse.json({ error: 'RESEND_API_KEY is not configured' }, { status: 500 });
     }
+
+    const resend = new Resend(process.env.RESEND_API_KEY);
 
     const db = getAdminDb();
     const guestDoc = await db.collection('guests').doc(guestId).get();
