@@ -1,10 +1,7 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
-
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   sendSignInLinkToEmail,
   isSignInWithEmailLink,
@@ -18,9 +15,10 @@ const ACTION_CODE_SETTINGS = {
   handleCodeInApp: true,
 };
 
-export default function LoginPage() {
+function LoginContent() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -33,29 +31,39 @@ export default function LoginPage() {
 
   // Complete sign-in if this is a magic link callback
   useEffect(() => {
-    if (typeof window !== 'undefined' && isSignInWithEmailLink(auth, window.location.href)) {
+    if (!isMounted) return;
+
+    if (isSignInWithEmailLink(auth, window.location.href)) {
       let storedEmail = window.localStorage.getItem('emailForSignIn');
       if (!storedEmail) {
         storedEmail = window.prompt('Please provide your email for confirmation') || '';
       }
+      
       if (storedEmail) {
         signInWithEmailLink(auth, storedEmail, window.location.href)
           .then(() => {
             window.localStorage.removeItem('emailForSignIn');
             router.push('/');
           })
-          .catch((err) => setError(err.message));
+          .catch((err) => {
+             console.error('Sign-in error:', err);
+             setError(err.message);
+          });
       }
     }
-  }, [router]);
+  }, [isMounted, router]);
 
   // Redirect if already signed in
   useEffect(() => {
-    if (!loading && user) router.push('/');
-  }, [user, loading, router]);
+    if (isMounted && !loading && user) {
+        router.push('/');
+    }
+  }, [user, loading, router, isMounted]);
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
+    if (!email) return;
+    
     setSubmitting(true);
     setError('');
     try {
@@ -63,6 +71,7 @@ export default function LoginPage() {
       window.localStorage.setItem('emailForSignIn', email);
       setSent(true);
     } catch (err: unknown) {
+      console.error('Send error:', err);
       setError(err instanceof Error ? err.message : 'Failed to send link');
     } finally {
       setSubmitting(false);
@@ -175,5 +184,17 @@ export default function LoginPage() {
         <p className="text-center mt-12 text-[9px] text-gray-800 uppercase tracking-[0.5em] font-bold">ANTGRAVITY QUANTUM SECURITY</p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }
