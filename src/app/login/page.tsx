@@ -10,11 +10,6 @@ import {
 import { auth } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 
-const ACTION_CODE_SETTINGS = {
-  url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/login`,
-  handleCodeInApp: true,
-};
-
 function LoginContent() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -66,8 +61,13 @@ function LoginContent() {
     
     setSubmitting(true);
     setError('');
+    const dynamicActionCodeSettings = {
+      url: `${window.location.origin}/login`,
+      handleCodeInApp: true,
+    };
+
     try {
-      await sendSignInLinkToEmail(auth, email, ACTION_CODE_SETTINGS);
+      await sendSignInLinkToEmail(auth, email, dynamicActionCodeSettings);
       window.localStorage.setItem('emailForSignIn', email);
       setSent(true);
     } catch (err: unknown) {
