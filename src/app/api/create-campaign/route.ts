@@ -1,0 +1,36 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getAdminDb } from '@/lib/firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
+
+export async function POST(req: NextRequest) {
+  try {
+    const { name, ownerEmail } = await req.json();
+
+    if (!name || !ownerEmail) {
+      return NextResponse.json({ error: 'name and ownerEmail are required' }, { status: 400 });
+    }
+
+    const db = getAdminDb();
+    
+    // Create the new campaign via admin SDK
+    const docRef = db.collection('campaigns').doc();
+    
+    const campaignData = {
+      name: name.trim(),
+      ownerEmail: ownerEmail.toLowerCase().trim(),
+      createdAt: FieldValue.serverTimestamp(),
+    };
+
+    await docRef.set(campaignData);
+
+    return NextResponse.json({ 
+      id: docRef.id, 
+      ...campaignData,
+      createdAt: new Date().toISOString() 
+    });
+
+  } catch (err) {
+    console.error('create-campaign error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
