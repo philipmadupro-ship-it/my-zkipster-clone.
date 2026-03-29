@@ -214,33 +214,6 @@ export default function AdminDashboard() {
     }
   }
 
-  async function handleSendInvitation(guestId: string, guestEmail: string) {
-    if (!guestEmail) {
-      showToast('Guest has no email address', 'error');
-      return;
-    }
-    
-    setIsDeleting(true); 
-    try {
-      const res = await fetch('/api/send-invitation', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          guestId, 
-          campaignName: selectedCampaign?.name, 
-          appUrl: origin 
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to send invitation');
-      
-      showToast('Invitation email sent!', 'success');
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Failed to send email', 'error');
-    } finally {
-      setIsDeleting(false);
-    }
-  }
 
   if (!isMounted || loading || !user) {
     return (
@@ -462,16 +435,6 @@ export default function AdminDashboard() {
                                   })()}
                                 </td>
                                 <td className="px-6 py-6 text-right flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0">
-                                  {guest.email && (
-                                    <button 
-                                      onClick={() => handleSendInvitation(guest.id, guest.email as string)}
-                                      disabled={isDeleting}
-                                      className="p-2.5 bg-white/5 hover:bg-white text-gray-400 hover:text-black rounded-xl border border-white/5 transition-all duration-300"
-                                      title="Send Invitation"
-                                    >
-                                      ✉️
-                                    </button>
-                                  )}
                                   <button 
                                     onClick={() => handleDeleteGuest(guest.id, guest.name || 'this guest')} 
                                     disabled={isDeleting}
