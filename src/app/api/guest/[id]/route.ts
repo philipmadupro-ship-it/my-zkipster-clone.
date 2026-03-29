@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string }}) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }>}) {
   try {
+    const { id } = await params;
     const db = getAdminDb();
-    const doc = await db.collection('guests').doc(params.id).get();
+    const doc = await db.collection('guests').doc(id).get();
 
     if (!doc.exists) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });

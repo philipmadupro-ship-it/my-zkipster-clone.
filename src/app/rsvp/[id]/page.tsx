@@ -3,12 +3,13 @@ import { notFound } from 'next/navigation';
 import RSVPClient from '@/components/RSVPClient';
 
 interface Props {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default async function RSVPPage({ params }: Props) {
+  const { id } = await params;
   const db = getAdminDb();
-  const doc = await db.collection('guests').doc(params.id).get();
+  const doc = await db.collection('guests').doc(id).get();
 
   if (!doc.exists) notFound();
 
