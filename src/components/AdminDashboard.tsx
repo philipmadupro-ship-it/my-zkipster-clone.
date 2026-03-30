@@ -18,6 +18,7 @@ export interface CampaignData {
   id: string;
   name: string;
   ownerEmail: string;
+  slug?: string;
   createdAt?: any;
 }
 
@@ -163,10 +164,11 @@ export default function AdminDashboard() {
 
   async function copyCampaignLink() {
     if (!selectedCampaign) return;
-    const link = `${origin}/c/${selectedCampaign.id}`;
+    const identifier = selectedCampaign.slug || selectedCampaign.id;
+    const link = `${origin}/c/${identifier}`;
     try {
       await navigator.clipboard.writeText(link);
-      showToast('Campaign link copied!', 'success');
+      showToast('Shortened link copied!', 'success');
     } catch {
       showToast('Failed to copy', 'error');
     }

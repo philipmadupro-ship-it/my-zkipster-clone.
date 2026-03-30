@@ -12,12 +12,16 @@ export async function POST(req: NextRequest) {
 
     const db = getAdminDb();
     
+    // Generate a short 7-character slug (alphanumeric, lowercase)
+    const slug = Math.random().toString(36).substring(2, 9);
+    
     // Create the new campaign via admin SDK
     const docRef = db.collection('campaigns').doc();
     
     const campaignData = {
       name: name.trim(),
       ownerEmail: ownerEmail.toLowerCase().trim(),
+      slug: slug,
       createdAt: FieldValue.serverTimestamp(),
     };
 

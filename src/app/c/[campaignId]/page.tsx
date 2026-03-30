@@ -7,7 +7,15 @@ export const dynamic = 'force-dynamic';
 export default async function CampaignPage({ params }: { params: Promise<{ campaignId: string }> }) {
   const { campaignId } = await params;
   const db = getAdminDb();
-  const doc = await db.collection('campaigns').doc(campaignId).get();
+  
+  // Try finding by direct ID first (legacy)
+  let doc = await db.collection('campaigns').doc(campaignId).get();
+
+  // If not found, try finding by "slug" field
+  if (!doc.exists) {
+    const q = await db.collection('campaigns').where('slug', '==', campaignId).get();
+    if (!q.empty) doc = q.docs[0];
+  }
 
   if (!doc.exists) {
     notFound();
