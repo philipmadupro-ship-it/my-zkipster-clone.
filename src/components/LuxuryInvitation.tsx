@@ -44,7 +44,7 @@ export default function LuxuryInvitation({ guest, campaign }: { guest: Guest | n
               Dear {name},
             </h2>
             <p className="text-luxury-muted leading-relaxed max-w-[400px] mx-auto text-[15px]">
-              We are delighted to confirm your invitation to the <span className="bg-luxury-highlight px-1 text-luxury-dark font-medium">{campaign?.name || 'Emanuel Ungaro runway show FW26'}</span>.
+              We are delighted to confirm your invitation to the <span className="bg-luxury-highlight px-1 text-luxury-dark font-medium">{campaign?.name || 'Exclusive Fashion Event'}</span>.
             </p>
           </section>
 
@@ -53,12 +53,12 @@ export default function LuxuryInvitation({ guest, campaign }: { guest: Guest | n
             <div className="flex flex-col sm:flex-row sm:gap-2">
               <span className="text-[11px] font-bold uppercase tracking-widest text-luxury-dark w-28 shrink-0">Date & Time:</span>
               <span className="text-[14px] text-luxury-dark">
-                {campaign?.eventDate || 'Tuesday, 3 March, 2026'} at {campaign?.eventTime || '9h30 AM'}.
+                {campaign?.eventDate || 'Date TBD'} at {campaign?.eventTime || 'Time TBD'}.
               </span>
             </div>
             <div className="flex flex-col sm:flex-row sm:gap-2">
               <span className="text-[11px] font-bold uppercase tracking-widest text-luxury-dark w-28 shrink-0">Venue:</span>
-              <span className="text-[14px] text-luxury-dark">{campaign?.eventVenue || 'The Opéra Garnier, Place de l\'Opéra, 75009 Paris'}</span>
+              <span className="text-[14px] text-luxury-dark">{campaign?.eventVenue || 'Venue TBD'}</span>
             </div>
             <div className="flex flex-col sm:flex-row sm:gap-2">
               <span className="text-[11px] font-bold uppercase tracking-widest text-luxury-dark w-28 shrink-0">Seat number:</span>
@@ -91,7 +91,7 @@ export default function LuxuryInvitation({ guest, campaign }: { guest: Guest | n
                 Please present the QR code attached to this email at the entrance to check in. To ensure a smooth experience, kindly arrive <strong>30 minutes before showtime</strong>.
               </p>
               <p className="text-[13px] text-luxury-muted italic text-center">
-                For attendance changes, please notify us at <span className="underline">rsvp@emanuelungaro.com</span>
+                For attendance changes, please notify us at <span className="underline">pressoffice@ungaro.com</span>
               </p>
             </div>
           </section>
