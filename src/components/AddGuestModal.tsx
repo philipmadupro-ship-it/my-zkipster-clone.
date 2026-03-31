@@ -32,6 +32,7 @@ export default function AddGuestModal({ campaignId, onGuestAdded, onClose }: Pro
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [category, setCategory] = useState('Standard');
+  const [seatNumber, setSeatNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -53,7 +54,8 @@ export default function AddGuestModal({ campaignId, onGuestAdded, onClose }: Pro
           email: email.trim(), 
           category,
           campaignId, 
-          ownerEmail: user?.email?.toLowerCase() 
+          ownerEmail: user?.email?.toLowerCase(),
+          seatNumber: seatNumber.trim()
         }),
       });
       const data = await res.json();
@@ -126,19 +128,31 @@ export default function AddGuestModal({ campaignId, onGuestAdded, onClose }: Pro
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500 ml-1">Profile Category / VIP Status</label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full bg-transparent border-b border-white/10 py-3 text-white outline-none focus:border-white transition-colors appearance-none cursor-pointer"
-              >
-                <option value="Standard" className="bg-black text-white">Standard Guest</option>
-                <option value="VIP" className="bg-black text-white">VIP Profile</option>
-                <option value="Press" className="bg-black text-white">Press / Media</option>
-                <option value="Staff" className="bg-black text-white">Event Staff</option>
-                <option value="Speaker" className="bg-black text-white">Guest Speaker</option>
-              </select>
+            <div className="grid grid-cols-2 gap-8">
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500 ml-1 font-sans">Profile Category / VIP Status</label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full bg-transparent border-b border-white/10 py-3 text-white outline-none focus:border-white transition-colors appearance-none cursor-pointer text-sm"
+                >
+                  <option value="Standard" className="bg-black text-white">Standard Guest</option>
+                  <option value="VIP" className="bg-black text-white">VIP Profile</option>
+                  <option value="Press" className="bg-black text-white">Press / Media</option>
+                  <option value="Staff" className="bg-black text-white">Event Staff</option>
+                  <option value="Speaker" className="bg-black text-white">Guest Speaker</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500 ml-1 font-sans">Seat Number</label>
+                <input
+                  type="text"
+                  placeholder="e.g. A-12"
+                  value={seatNumber}
+                  onChange={(e) => setSeatNumber(e.target.value)}
+                  className="w-full bg-transparent border-b border-white/10 py-3 text-white outline-none focus:border-white transition-colors placeholder:text-gray-800 text-sm"
+                />
+              </div>
             </div>
 
             <div className="flex gap-4 pt-6">

@@ -19,6 +19,9 @@ export interface CampaignData {
   name: string;
   ownerEmail: string;
   slug?: string;
+  eventDate?: string;
+  eventTime?: string;
+  eventVenue?: string;
   createdAt?: any;
 }
 
@@ -38,6 +41,9 @@ export default function AdminDashboard() {
   const [campaigns, setCampaigns] = useState<CampaignData[]>([]);
   const [selectedCampaign, setSelectedCampaign] = useState<CampaignData | null>(null);
   const [newCampaignName, setNewCampaignName] = useState('');
+  const [newEventDate, setNewEventDate] = useState('');
+  const [newEventTime, setNewEventTime] = useState('');
+  const [newEventVenue, setNewEventVenue] = useState('');
   const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
 
   const [guests, setGuests] = useState<GuestData[]>([]);
@@ -147,13 +153,29 @@ export default function AdminDashboard() {
       const res = await fetch('/api/create-campaign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newCampaignName.trim(), ownerEmail: user.email.toLowerCase() }),
+        body: JSON.stringify({ 
+          name: newCampaignName.trim(), 
+          ownerEmail: user.email.toLowerCase(),
+          eventDate: newEventDate,
+          eventTime: newEventTime,
+          eventVenue: newEventVenue
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create campaign');
 
       setNewCampaignName('');
-      setSelectedCampaign({ id: data.id, name: data.name, ownerEmail: data.ownerEmail });
+      setNewEventDate('');
+      setNewEventTime('');
+      setNewEventVenue('');
+      setSelectedCampaign({ 
+        id: data.id, 
+        name: data.name, 
+        ownerEmail: data.ownerEmail,
+        eventDate: data.eventDate,
+        eventTime: data.eventTime,
+        eventVenue: data.eventVenue
+      });
       showToast('Campaign created!', 'success');
     } catch (err) {
       showToast('Failed to create campaign', 'error');
@@ -274,22 +296,46 @@ export default function AdminDashboard() {
              ))
            )}
 
-           <div className="pt-6">
-             <form onSubmit={handleCreateCampaign} className="space-y-2">
-               <input
-                 type="text"
-                 placeholder="+ New Campaign"
-                 value={newCampaignName}
-                 onChange={(e) => setNewCampaignName(e.target.value)}
-                 className="w-full bg-gray-950 border border-gray-800 rounded-lg text-xs py-2 px-3 outline-none focus:border-violet-600 transition"
-               />
-               <button 
-                 type="submit" 
-                 disabled={isCreatingCampaign || !newCampaignName.trim()}
-                 className="hidden"
-               />
-             </form>
-           </div>
+            <div className="pt-6 space-y-4">
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] px-3">New Campaign</p>
+              <form onSubmit={handleCreateCampaign} className="px-3 space-y-3">
+                <input
+                  type="text"
+                  placeholder="Campaign Name"
+                  value={newCampaignName}
+                  onChange={(e) => setNewCampaignName(e.target.value)}
+                  className="w-full bg-gray-950 border border-gray-800 rounded-lg text-xs py-2 px-3 outline-none focus:border-violet-600 transition"
+                />
+                <input
+                  type="text"
+                  placeholder="Event Date (e.g. Tuesday, 3 March)"
+                  value={newEventDate}
+                  onChange={(e) => setNewEventDate(e.target.value)}
+                  className="w-full bg-gray-950 border border-gray-800 rounded-lg text-[10px] py-2 px-3 outline-none focus:border-violet-600 transition"
+                />
+                <input
+                  type="text"
+                  placeholder="Event Time (e.g. 9h30 AM)"
+                  value={newEventTime}
+                  onChange={(e) => setNewEventTime(e.target.value)}
+                  className="w-full bg-gray-950 border border-gray-800 rounded-lg text-[10px] py-2 px-3 outline-none focus:border-violet-600 transition"
+                />
+                <input
+                  type="text"
+                  placeholder="Event Venue"
+                  value={newEventVenue}
+                  onChange={(e) => setNewEventVenue(e.target.value)}
+                  className="w-full bg-gray-950 border border-gray-800 rounded-lg text-[10px] py-2 px-3 outline-none focus:border-violet-600 transition"
+                />
+                <button 
+                  type="submit" 
+                  disabled={isCreatingCampaign || !newCampaignName.trim()}
+                  className="w-full py-2 bg-white/5 hover:bg-white/10 text-white text-[10px] font-bold rounded-lg border border-white/5 transition"
+                >
+                   {isCreatingCampaign ? 'Creating...' : 'CREATE CAMPAIGN'}
+                </button>
+              </form>
+            </div>
         </nav>
 
         <div className="p-4 border-t border-gray-800 bg-gray-950/30">
@@ -313,10 +359,16 @@ export default function AdminDashboard() {
         {selectedCampaign ? (
           <>
             <header className="h-24 border-b border-white/5 bg-black/20 backdrop-blur-xl flex items-center justify-between px-10 flex-shrink-0">
-               <div className="space-y-1">
-                 <h2 className="text-2xl font-display font-bold text-white tracking-tight">{selectedCampaign.name}</h2>
-                 <p className="text-[10px] text-gray-600 font-mono tracking-wider uppercase">Event Reference ID: {selectedCampaign.id}</p>
-               </div>
+                <div className="space-y-1">
+                  <h2 className="text-2xl font-display font-bold text-white tracking-tight">{selectedCampaign.name}</h2>
+                  <div className="flex gap-4 text-[9px] text-gray-500 font-mono tracking-wider uppercase">
+                    <span>{selectedCampaign.eventDate || 'No Date'}</span>
+                    <span>•</span>
+                    <span>{selectedCampaign.eventTime || 'No Time'}</span>
+                    <span>•</span>
+                    <span>{selectedCampaign.eventVenue || 'No Venue'}</span>
+                  </div>
+                </div>
                
                <div className="flex items-center gap-4">
                   <div className="flex items-center bg-white/5 border border-white/10 rounded-2xl px-1 py-1">

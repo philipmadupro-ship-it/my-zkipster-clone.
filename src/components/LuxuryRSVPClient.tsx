@@ -9,9 +9,19 @@ interface Guest {
   email: string;
   status: string;
   qrCodeUrl: string;
+  seatNumber?: string;
+  campaignId?: string;
 }
 
-export default function LuxuryRSVPClient({ guest }: { guest: Guest }) {
+interface Campaign {
+  id: string;
+  name: string;
+  eventDate?: string;
+  eventTime?: string;
+  eventVenue?: string;
+}
+
+export default function LuxuryRSVPClient({ guest, campaign }: { guest: Guest, campaign: Campaign | null }) {
   const [name, setName] = useState(guest.name || '');
   const [state, setState] = useState<'idle' | 'loading' | 'confirmed' | 'error'>(
     guest.status !== 'invited' ? 'confirmed' : 'idle'
@@ -45,7 +55,7 @@ export default function LuxuryRSVPClient({ guest }: { guest: Guest }) {
 
   // If confirmed, show the elegant invitation view
   if (state === 'confirmed') {
-    return <LuxuryInvitation guest={{ ...guest, name: name || guest.name, status: 'confirmed', qrCodeUrl }} />;
+    return <LuxuryInvitation guest={{ ...guest, name: name || guest.name, status: 'confirmed', qrCodeUrl }} campaign={campaign} />;
   }
 
   return (

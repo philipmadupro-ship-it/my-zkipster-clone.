@@ -4,7 +4,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, ownerEmail } = await req.json();
+    const { name, ownerEmail, eventDate, eventTime, eventVenue } = await req.json();
 
     if (!name || !ownerEmail) {
       return NextResponse.json({ error: 'name and ownerEmail are required' }, { status: 400 });
@@ -22,6 +22,9 @@ export async function POST(req: NextRequest) {
       name: name.trim(),
       ownerEmail: ownerEmail.toLowerCase().trim(),
       slug: slug,
+      eventDate: eventDate || '',
+      eventTime: eventTime || '',
+      eventVenue: eventVenue || '',
       createdAt: FieldValue.serverTimestamp(),
     };
 

@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const { firstName, lastName, email, category, campaignId, ownerEmail } = await req.json();
+    const { firstName, lastName, email, category, campaignId, ownerEmail, seatNumber } = await req.json();
 
     if (!firstName || !lastName || !campaignId || !ownerEmail) {
       return NextResponse.json({ error: 'firstName, lastName, campaignId, and ownerEmail are required' }, { status: 400 });
@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
       category: category || 'Standard',
       status: 'invited',
       qrCodeUrl,
+      seatNumber: seatNumber || '',
       rsvpLink: '—', // Link is unified per campaign now
       confirmedAt: null,
       arrivedAt: null,

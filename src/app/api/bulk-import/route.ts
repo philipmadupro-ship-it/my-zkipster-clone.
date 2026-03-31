@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
           color: { dark: '#0f0f0f', light: '#fafaf8' },
         });
 
-        const { firstName, lastName, email, category, ...extraFields } = g;
+        const { firstName, lastName, email, category, seatNumber, ...extraFields } = g;
 
         const guest = {
           id,
@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
           category: category || 'Standard',
           status: 'invited',
           qrCodeUrl,
+          seatNumber: seatNumber || '',
           rsvpLink: '—', // Unified campaign url used instead
           confirmedAt: null,
           arrivedAt: null,

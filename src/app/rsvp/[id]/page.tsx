@@ -9,18 +9,43 @@ interface Props {
 export default async function RSVPPage({ params }: Props) {
   const { id } = await params;
   const db = getAdminDb();
-  const doc = await db.collection('guests').doc(id).get();
+  
+  let guest = null;
+  let campaign = null;
 
-  if (!doc.exists) notFound();
+  try {
+    const doc = await db.collection('guests').doc(id).get();
+    if (doc.exists) {
+      const data = doc.data()!;
+      guest = {
+        id: doc.id,
+        name: data.name ?? '',
+        email: data.email ?? '',
+        status: data.status ?? 'invited',
+        qrCodeUrl: data.qrCodeUrl ?? '',
+        seatNumber: data.seatNumber ?? '',
+        campaignId: data.campaignId,
+      };
 
-  const data = doc.data()!;
-  const guest = {
-    id: doc.id,
-    name: data.name ?? '',
-    email: data.email ?? '',
-    status: data.status ?? 'invited',
-    qrCodeUrl: data.qrCodeUrl ?? '',
-  };
+      if (guest.campaignId) {
+        const campDoc = await db.collection('campaigns').doc(guest.campaignId).get();
+        if (campDoc.exists) {
+          const campData = campDoc.data()!;
+          campaign = {
+            id: campDoc.id,
+            name: campData.name,
+            eventDate: campData.eventDate,
+            eventTime: campData.eventTime,
+            eventVenue: campData.eventVenue,
+          };
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error fetching RSVP data:', err);
+  }
 
-  return <LuxuryRSVPClient guest={guest} />;
+  if (!guest) notFound();
+
+  return <LuxuryRSVPClient guest={guest} campaign={campaign} />;
 }
