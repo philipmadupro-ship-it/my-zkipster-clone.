@@ -9,6 +9,7 @@ interface Guest {
   status: string;
   qrCodeUrl: string;
   seatNumber?: string;
+  campaignId?: string;
 }
 
 interface Campaign {
