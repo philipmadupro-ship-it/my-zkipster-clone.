@@ -1,6 +1,6 @@
 import { getAdminDb } from '@/lib/firebase-admin';
 import { notFound } from 'next/navigation';
-import RSVPClient from '@/components/RSVPClient';
+import LuxuryRSVPClient from '@/components/LuxuryRSVPClient';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -20,8 +20,7 @@ export default async function RSVPPage({ params }: Props) {
     email: data.email ?? '',
     status: data.status ?? 'invited',
     qrCodeUrl: data.qrCodeUrl ?? '',
-    rsvpLink: data.rsvpLink ?? '',
   };
 
-  return <RSVPClient guest={guest} />;
+  return <LuxuryRSVPClient guest={guest} />;
 }

@@ -41,36 +41,42 @@ export default function ClaimForm({ campaignId }: { campaignId: string }) {
   }
 
   return (
-    <form onSubmit={handleLookup} className="space-y-4">
+    <form onSubmit={handleLookup} className="space-y-6">
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-red-400 text-sm mb-4">
+        <div className="bg-red-50 text-red-500 border border-red-100 rounded-sm p-4 text-[13px] mb-6 animate-fade-up">
           {error}
         </div>
       )}
 
-      <div className="space-y-3">
-        <input
-          type="text"
-          placeholder="First Name"
-          value={firstName}
-          onChange={(e) => setFirstName(e.target.value)}
-          required
-          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition"
-        />
-        <input
-          type="text"
-          placeholder="Last Name"
-          value={lastName}
-          onChange={(e) => setLastName(e.target.value)}
-          required
-          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition"
-        />
+      <div className="space-y-4">
+        <div className="space-y-2 text-left">
+          <label className="text-[10px] uppercase tracking-[0.2em] font-bold text-luxury-muted ml-0.5 font-sans">First Name</label>
+          <input
+            type="text"
+            placeholder="ENTER FIRST NAME"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            required
+            className="w-full bg-transparent border-b border-gray-200 py-3 text-luxury-dark placeholder:text-gray-200 focus:outline-none focus:border-luxury-gold transition-all uppercase tracking-widest text-[13px] font-sans"
+          />
+        </div>
+        <div className="space-y-2 text-left">
+          <label className="text-[10px] uppercase tracking-[0.2em] font-bold text-luxury-muted ml-0.5 font-sans">Last Name</label>
+          <input
+            type="text"
+            placeholder="ENTER LAST NAME"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            required
+            className="w-full bg-transparent border-b border-gray-200 py-3 text-luxury-dark placeholder:text-gray-200 focus:outline-none focus:border-luxury-gold transition-all uppercase tracking-widest text-[13px] font-sans"
+          />
+        </div>
       </div>
 
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-medium py-3 rounded-lg transition mt-4"
+        className="w-full bg-luxury-dark hover:bg-black disabled:opacity-50 text-white font-medium py-5 rounded-sm transition-all mt-8 uppercase text-[11px] tracking-[0.3em] shadow-sm active:scale-[0.98] font-sans"
       >
         {loading ? 'Searching…' : 'Find My Invitation'}
       </button>

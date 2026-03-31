@@ -24,30 +24,35 @@ export default async function CampaignPage({ params }: { params: Promise<{ campa
   const campaign = { id: doc.id, ...doc.data() } as { id: string; name: string };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-6 selection:bg-white selection:text-black">
-      <div className="fixed inset-0 pointer-events-none opacity-20">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-white/5 blur-[120px] rounded-full" />
-      </div>
-
-      <div className="w-full max-w-xl relative animate-in fade-in zoom-in-95 duration-1000">
-        <div className="bg-white/[0.02] border border-white/5 backdrop-blur-3xl rounded-[3rem] overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)] p-12 md:p-16 text-center space-y-8">
-          <div className="space-y-4">
-            <p className="text-[10px] text-gray-500 uppercase tracking-[0.4em] font-bold">Exclusive Access</p>
-            <h1 className="font-display text-4xl font-bold text-white tracking-tighter">{campaign.name}</h1>
-            <div className="h-px w-12 bg-white/20 mx-auto" />
-          </div>
+    <div className="min-h-screen bg-luxury-off-white flex flex-col items-center justify-center p-6 sm:p-12 font-sans text-luxury-dark selection:bg-luxury-gold selection:text-white relative">
+      {/* Background Gradient */}
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(255,251,240,1)_0%,_rgba(250,250,250,1)_100%)] pointer-events-none" />
+      
+      <main className="relative w-full max-w-[600px] bg-white shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-gray-100 rounded-sm overflow-hidden animate-fade-up">
+        <div className="p-12 sm:p-16 flex flex-col items-center text-center">
           
-          <p className="text-gray-500 text-sm font-medium leading-relaxed max-w-xs mx-auto">
-            Please verify your identity to securely retrieve your digital authentication credentials.
+          <header className="mb-16 animate-fade-up delay-100">
+            <p className="text-[10px] text-luxury-muted uppercase tracking-[0.4em] font-bold mb-4">Exclusive Access</p>
+            <h1 className="font-cormorant text-4xl sm:text-5xl uppercase tracking-[0.2em] text-luxury-gold font-light decoration-luxury-gold/30">
+              {campaign.name}
+            </h1>
+            <div className="h-px w-12 bg-luxury-gold/20 mx-auto mt-8" />
+          </header>
+          
+          <p className="text-luxury-muted text-sm font-light leading-relaxed max-w-xs mx-auto mb-12 animate-fade-up delay-200">
+            Please verify your identity to securely retrieve your digital authentication credentials for this exclusive event.
           </p>
           
-          <div className="pt-4">
+          <div className="w-full animate-fade-up delay-300">
             <ClaimForm campaignId={campaign.id} />
           </div>
         </div>
         
-        <p className="text-center mt-12 text-[9px] text-gray-800 uppercase tracking-[0.5em] font-bold">POWERED BY ANTGRAVITY SYSTEM</p>
-      </div>
+        <footer className="w-full border-t border-gray-100 py-12 px-12 text-center space-y-3 bg-white animate-fade-up delay-400">
+          <p className="text-[10px] uppercase tracking-[0.4em] text-luxury-muted font-light">Event communications powered by</p>
+          <p className="font-cormorant text-2xl uppercase tracking-[0.3em] text-gray-400 font-light translate-y-1">Emanuel Ungaro</p>
+        </footer>
+      </main>
     </div>
   );
 }
