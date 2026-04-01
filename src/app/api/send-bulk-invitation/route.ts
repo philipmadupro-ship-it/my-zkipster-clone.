@@ -8,6 +8,15 @@ export async function POST(req: NextRequest) {
   try {
     const { campaignId, guestIds, subject, customMessage } = await req.json();
 
+    // SMTP Diagnostic Check for Vercel
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      console.error('[API] Critical Error: SMTP_USER or SMTP_PASS is missing. Check Vercel Env Vars.');
+      return NextResponse.json({ 
+        error: 'Email service not configured on host.', 
+        details: 'Ensure SMTP_USER and SMTP_PASS are set in Vercel Dashboard.' 
+      }, { status: 500 });
+    }
+
     if (!campaignId || !guestIds || !Array.isArray(guestIds)) {
       return NextResponse.json({ error: 'campaignId and guestIds are required' }, { status: 400 });
     }

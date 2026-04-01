@@ -36,6 +36,11 @@ export async function POST(req: NextRequest) {
 
     // 4. Send Confirmation Email with QR Code
     try {
+      if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        console.warn('[API] Warning: SMTP_USER or SMTP_PASS is missing. Confirmation email skipped.');
+        return NextResponse.json({ success: true, qrCodeUrl: data.qrCodeUrl, warning: 'Email not configured' });
+      }
+
       const campaignId = data.campaignId;
       const campaignDoc = await db.collection('campaigns').doc(campaignId).get();
       const campaign = campaignDoc.exists ? campaignDoc.data()! : { name: 'Emanuel Ungaro FW26' };
