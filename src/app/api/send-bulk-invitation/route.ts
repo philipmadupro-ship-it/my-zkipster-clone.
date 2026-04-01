@@ -45,11 +45,11 @@ export async function POST(req: NextRequest) {
 
     const host = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-    // 3. Iterate and send
-    for (const guestId of guestIds) {
+    // 3. Process guests in parallel (with limited concurrency if needed, but for 100 Promise.all is fine)
+    await Promise.all(guestIds.map(async (guestId) => {
       try {
         const guestDoc = await db.collection('guests').doc(guestId).get();
-        if (!guestDoc.exists) continue;
+        if (!guestDoc.exists) return;
         const guest = guestDoc.data()!;
 
         const rsvpLink = `${host}/rsvp/${guestId}`;
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
         console.error(`Failed to send to ${guestId}:`, err);
         results.failed++;
       }
-    }
+    }));
 
     return NextResponse.json({ 
       success: true, 

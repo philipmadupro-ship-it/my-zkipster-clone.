@@ -17,6 +17,9 @@ export default function SendInvitationsModal({ campaignId, guests, onClose, onSe
   );
   const [target, setTarget] = useState<'all' | 'uninvited'>('uninvited');
   const [sending, setSending] = useState(false);
+  const [currentBatch, setCurrentBatch] = useState(0);
+  const [totalBatches, setTotalBatches] = useState(0);
+  const [sentCount, setSentCount] = useState(0);
   const [error, setError] = useState('');
 
   const targetGuests = target === 'all' 
@@ -31,28 +34,48 @@ export default function SendInvitationsModal({ campaignId, guests, onClose, onSe
 
     setSending(true);
     setError('');
+    setSentCount(0);
     
+    const BATCH_SIZE = 100;
+    const guestIds = targetGuests.map(g => g.id);
+    const chunks: string[][] = [];
+    
+    for (let i = 0; i < guestIds.length; i += BATCH_SIZE) {
+      chunks.push(guestIds.slice(i, i + BATCH_SIZE));
+    }
+    
+    setTotalBatches(chunks.length);
+    let totalSuccess = 0;
+
     try {
-      const res = await fetch('/api/send-bulk-invitation', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          campaignId,
-          guestIds: targetGuests.map(g => g.id),
-          subject,
-          customMessage,
-        }),
-      });
+      for (let i = 0; i < chunks.length; i++) {
+        setCurrentBatch(i + 1);
+        
+        const res = await fetch('/api/send-bulk-invitation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            campaignId,
+            guestIds: chunks[i],
+            subject,
+            customMessage,
+          }),
+        });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to dispatch invitations');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || `Failed to dispatch batch ${i + 1}`);
+        
+        totalSuccess += data.count;
+        setSentCount(totalSuccess);
+      }
 
-      onSent(targetGuests.length);
+      onSent(totalSuccess);
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setSending(false);
+      setCurrentBatch(0);
     }
   }
 
@@ -148,10 +171,15 @@ export default function SendInvitationsModal({ campaignId, guests, onClose, onSe
             className="w-full bg-luxury-dark hover:bg-black disabled:opacity-50 text-white font-bold py-5 rounded-sm transition-all duration-500 text-[12px] uppercase tracking-[0.4em] shadow-xl active:scale-95 flex items-center justify-center gap-3"
           >
             {sending ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                Dispatching...
-              </>
+              <div className="flex flex-col items-center gap-1">
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                  <span>Dispatching Wave {currentBatch} of {totalBatches}...</span>
+                </div>
+                <span className="text-[10px] opacity-60 font-normal lowercase tracking-widest">
+                  ({sentCount} / {targetGuests.length} Delivered)
+                </span>
+              </div>
             ) : (
               `Send Invitations to ${targetGuests.length} Guests`
             )}
