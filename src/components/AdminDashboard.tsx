@@ -193,8 +193,9 @@ export default function AdminDashboard() {
 
   async function copyCampaignLink() {
     if (!selectedCampaign) return;
+    const currentHost = typeof window !== 'undefined' ? window.location.origin : origin;
     const identifier = selectedCampaign.slug || selectedCampaign.id;
-    const link = `${origin}/c/${identifier}`;
+    const link = `${currentHost}/c/${identifier}`;
     try {
       await navigator.clipboard.writeText(link);
       showToast('Shortened link copied!', 'success');

@@ -52,7 +52,9 @@ export async function POST(req: NextRequest) {
       failed: 0,
     };
 
-    const host = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const protocol = req.headers.get('x-forwarded-proto') || 'http';
+    const hostHeader = req.headers.get('host') || 'localhost:3000';
+    const host = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${hostHeader}`;
 
     // 3. Process guests strictly sequentially (as requested by user: 'not at the same time')
     for (const guestId of guestIds) {
