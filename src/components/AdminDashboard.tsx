@@ -13,6 +13,7 @@ const AddGuestModal = dynamic(() => import('./AddGuestModal'), { ssr: false });
 const ImportGuestsModal = dynamic(() => import('./ImportGuestsModal'), { ssr: false });
 const LiveArrivalFeed = dynamic(() => import('./LiveArrivalFeed'), { ssr: false });
 const ArrivalAnalytics = dynamic(() => import('./ArrivalAnalytics'), { ssr: false });
+const QRScanner = dynamic(() => import('./QRScanner'), { ssr: false });
 
 export interface CampaignData {
   id: string;
@@ -54,6 +55,7 @@ export default function AdminDashboard() {
   const [dbError, setDbError] = useState<string | null>(null);
   const [origin, setOrigin] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -338,19 +340,23 @@ export default function AdminDashboard() {
             </div>
         </nav>
 
-        <div className="p-4 border-t border-gray-800 bg-gray-950/30">
-           <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-emerald-600 flex items-center justify-center text-[10px]">{user.email?.charAt(0).toUpperCase()}</div>
+        <div className="p-4 border-t border-white/5 bg-white/5 backdrop-blur-md">
+           <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-luxury-gold flex items-center justify-center text-[11px] font-bold text-white shadow-lg">{user.email?.charAt(0).toUpperCase()}</div>
                 <div className="max-w-[120px] truncate">
-                  <p className="text-xs font-medium text-gray-300 truncate">{user.email}</p>
+                  <p className="text-[10px] font-bold text-white uppercase tracking-widest truncate">{user.email?.split('@')[0]}</p>
                 </div>
               </div>
-              <button onClick={() => signOut(auth)} className="text-xs text-gray-500 hover:text-red-400 transition">✕</button>
+              <button onClick={() => signOut(auth)} className="text-[10px] text-gray-500 hover:text-red-400 transition font-bold tracking-widest uppercase">Logout</button>
            </div>
-           <a href="/scan" target="_blank" className="block w-full text-center py-2 border border-gray-700 rounded-lg text-xs text-gray-400 hover:border-gray-500 hover:text-white transition">
-             📷 Open Scanner
-           </a>
+           
+            <button
+              onClick={() => setShowScanner(true)}
+              className="w-full py-4 bg-luxury-gold/10 border border-luxury-gold/30 rounded-sm text-[9px] font-bold text-luxury-gold uppercase tracking-[0.3em] transition-all duration-500 hover:bg-luxury-gold hover:text-white shadow-xl active:scale-95 flex items-center justify-center gap-2 mb-2"
+            >
+              Hostess Scanner
+            </button>
         </div>
       </aside>
 
@@ -440,8 +446,8 @@ export default function AdminDashboard() {
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="bg-white/5 border-b border-white/5">
-                            {['Guest Name', 'Email Index', 'Profile', 'Status', ...extraKeys, 'Registered', ''].map((h, i) => (
-                              <th key={i} className="px-8 py-6 text-[10px] text-gray-500 uppercase tracking-[0.3em] font-bold whitespace-nowrap font-display">
+                            {['', 'Guest Name', 'Email Index', 'Profile', 'Status', ...extraKeys, 'Registered', ''].map((h, i) => (
+                              <th key={i} className={`${i === 0 ? 'w-16 px-4' : 'px-8'} py-6 text-[10px] text-gray-500 uppercase tracking-[0.3em] font-bold whitespace-nowrap font-display`}>
                                 {h}
                               </th>
                             ))}
@@ -451,9 +457,34 @@ export default function AdminDashboard() {
                           {guests.map((guest) => {
                             const badge = STATUS_BADGE[guest.status] ?? STATUS_BADGE.invited;
                             return (
-                              <tr key={guest.id} className="hover:bg-white/[0.03] transition-all duration-300 group">
+                              <tr key={guest.id} className={`hover:bg-white/[0.03] transition-all duration-300 group ${guest.parentId ? 'bg-white/[0.01]' : ''}`}>
+                                <td className="px-4 py-6 whitespace-nowrap">
+                                  <div className="flex items-center justify-center">
+                                    {guest.portraitUrl ? (
+                                      /* eslint-disable-next-line @next/next/no-img-element */
+                                      <img 
+                                        src={guest.portraitUrl} 
+                                        alt={guest.name} 
+                                        className="w-10 h-10 rounded-full object-cover border border-white/10 shadow-lg"
+                                        onError={(e) => { (e.target as any).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(guest.name || 'G')}&background=333&color=fff`; }}
+                                      />
+                                    ) : (
+                                      <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-bold text-gray-500">
+                                        {(guest.firstName || guest.name || '?').charAt(0)}
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
                                 <td className="px-8 py-6 text-sm font-medium text-white whitespace-nowrap tracking-tight">
-                                  {guest.name || <span className="text-gray-700 italic">Unnamed Guest</span>}
+                                  <div className="flex flex-col">
+                                    <span className="flex items-center gap-2">
+                                      {guest.name || <span className="text-gray-700 italic">Unnamed Guest</span>}
+                                      {guest.parentId && (
+                                        <span className="text-[8px] bg-white/10 text-gray-400 px-1.5 py-0.5 rounded uppercase tracking-tighter">Plus One</span>
+                                      )}
+                                    </span>
+                                    {guest.seatNumber && <span className="text-[9px] text-luxury-gold uppercase tracking-widest mt-0.5">{guest.seatNumber}</span>}
+                                  </div>
                                 </td>
                                 <td className="px-8 py-6 text-xs text-gray-500 whitespace-nowrap font-mono">{guest.email || '—'}</td>
                                 <td className="px-8 py-6 whitespace-nowrap">
@@ -543,6 +574,7 @@ export default function AdminDashboard() {
       {showAdd && selectedCampaign && (
         <AddGuestModal 
           campaignId={selectedCampaign.id} 
+          guests={guests}
           onGuestAdded={(g: GuestData) => { setShowAdd(false); showToast('Guest added!', 'success'); }} 
           onClose={() => setShowAdd(false)} 
         />
@@ -556,6 +588,29 @@ export default function AdminDashboard() {
           }}
           onClose={() => setShowImport(false)}
         />
+      )}
+
+      {showScanner && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-black/80 backdrop-blur-md transition-opacity duration-700"
+            onClick={() => setShowScanner(false)}
+          />
+          <div className="relative w-full max-w-lg bg-white rounded-sm shadow-2xl overflow-hidden animate-fade-up">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-luxury-off-white">
+              <h3 className="font-cormorant text-xl text-luxury-dark uppercase tracking-widest">Hostess Scanner</h3>
+              <button 
+                onClick={() => setShowScanner(false)}
+                className="text-luxury-muted hover:text-luxury-dark transition-colors text-xl font-light"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-8 max-h-[85vh] overflow-y-auto">
+              <QRScanner />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

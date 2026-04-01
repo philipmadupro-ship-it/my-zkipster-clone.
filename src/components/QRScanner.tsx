@@ -7,6 +7,9 @@ interface ScanResult {
   status: 'confirmed' | 'arrived' | 'invited' | 'pending' | 'accepted' | 'refused' | 'not_found' | null;
   name?: string;
   email?: string;
+  portraitUrl?: string;
+  category?: string;
+  seatNumber?: string;
   arrivedAt?: string;
   error?: string;
 }
@@ -54,6 +57,9 @@ export default function QRScanner() {
         status: data.status,
         name: data.name,
         email: data.email,
+        portraitUrl: data.portraitUrl,
+        category: data.category,
+        seatNumber: data.seatNumber,
         arrivedAt: data.arrivedAt,
       });
     } catch {
@@ -135,11 +141,11 @@ export default function QRScanner() {
           <button
             key={m}
             onClick={() => { setMode(m); resetScan(); }}
-            className={`flex-1 py-3 rounded-lg text-sm font-medium transition ${mode === m
-              ? 'bg-violet-600 text-white'
-              : 'text-gray-400 hover:text-white'}`}
+            className={`flex-1 py-3 rounded-lg text-xs font-bold uppercase tracking-widest transition duration-500 ${mode === m
+              ? 'bg-luxury-gold text-white shadow-lg'
+              : 'text-gray-500 hover:text-luxury-dark'}`}
           >
-            {m === 'camera' ? '📷 Camera Scan' : '🖼️ Photo Upload'}
+            {m === 'camera' ? 'Camera' : 'Upload'}
           </button>
         ))}
       </div>
@@ -152,14 +158,14 @@ export default function QRScanner() {
               <div id="qr-reader" className="w-full" />
             </div>
           ) : (
-            <div className="p-8 text-center">
+            <div className="p-12 text-center">
               <div id="qr-reader-file" className="hidden" />
-              <div className="w-20 h-20 bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-4 text-4xl">
+              <div className="w-24 h-24 bg-luxury-off-white rounded-full flex items-center justify-center mx-auto mb-6 text-2xl border border-gray-100 shadow-inner">
                 🖼️
               </div>
-              <p className="text-gray-400 text-sm mb-4">Upload a photo containing a QR code</p>
-              <label className="cursor-pointer inline-block bg-violet-600 hover:bg-violet-500 text-white font-medium px-6 py-3 rounded-xl transition">
-                Choose Photo
+              <p className="text-luxury-muted text-[13px] mb-8 uppercase tracking-widest font-light">Select a high-resolution photo</p>
+              <label className="cursor-pointer inline-block bg-luxury-dark hover:bg-black text-white text-[11px] uppercase tracking-[0.2em] font-bold px-8 py-4 rounded-sm transition-all duration-500 shadow-xl">
+                Upload Image
                 <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
               </label>
             </div>
@@ -169,47 +175,72 @@ export default function QRScanner() {
 
       {/* Scan Result */}
       {scanResult.status && (
-        <div className={`rounded-2xl border p-6 ${
-          checkedIn || scanResult.status === 'arrived' ? 'bg-emerald-900/30 border-emerald-700' :
-          ['confirmed', 'accepted', 'invited', 'pending'].includes(scanResult.status) ? 'bg-violet-900/30 border-violet-700' :
-          scanResult.status === 'refused' ? 'bg-red-900/30 border-red-700' :
-          'bg-gray-900 border-gray-800'
+        <div className={`rounded-sm border p-8 shadow-2xl transition-all duration-700 animate-fade-up ${
+          checkedIn || scanResult.status === 'arrived' ? 'bg-white border-emerald-100' :
+          ['confirmed', 'accepted', 'invited', 'pending'].includes(scanResult.status) ? 'bg-white border-luxury-gold/20' :
+          scanResult.status === 'refused' ? 'bg-white border-red-100' :
+          'bg-white border-gray-100'
         }`}>
           {/* Not Arrived Yet — show check-in button */}
           {['confirmed', 'accepted', 'invited', 'pending'].includes(scanResult.status) && !checkedIn && (
-            <div className="text-center space-y-4">
-              <div className="text-5xl">🎟️</div>
-              <div>
-                <p className="text-xl font-semibold text-white">{scanResult.name}</p>
-                <p className="text-sm text-gray-400">{scanResult.email}</p>
+            <div className="text-center space-y-6">
+              <div className="relative inline-block">
+                <div className="w-28 h-28 rounded-full overflow-hidden mx-auto border-2 border-luxury-gold p-1 bg-white shadow-xl">
+                  {scanResult.portraitUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={scanResult.portraitUrl} alt={scanResult.name} className="w-full h-full object-cover rounded-full" />
+                  ) : (
+                    <div className="w-full h-full bg-luxury-off-white flex items-center justify-center text-luxury-gold text-2xl font-cormorant">
+                      {scanResult.name?.charAt(0)}
+                    </div>
+                  )}
+                </div>
+                {scanResult.category === 'VIP' && (
+                  <span className="absolute -top-1 -right-1 bg-luxury-gold text-white text-[8px] font-bold px-2 py-1 rounded-full shadow-lg animate-pulse">VIP</span>
+                )}
               </div>
-              <div className="inline-block bg-violet-500/20 border border-violet-600 rounded-full px-3 py-1 text-violet-300 text-xs uppercase tracking-wide">
-                {scanResult.status === 'invited' || scanResult.status === 'pending' ? 'Not RSVP\'d — Ready to check in' : 'Confirmed — Ready to check in'}
+              
+              <div className="space-y-1">
+                <p className="text-2xl font-cormorant text-luxury-dark uppercase tracking-widest">{scanResult.name}</p>
+                <div className="flex items-center justify-center gap-3">
+                    <span className="text-[10px] uppercase tracking-widest text-luxury-muted">{scanResult.category}</span>
+                    <span className="w-1 h-1 bg-luxury-gold rounded-full opacity-30" />
+                    <span className="text-[10px] uppercase tracking-widest text-luxury-dark font-bold">Seat {scanResult.seatNumber}</span>
+                </div>
               </div>
+
               <button
                 onClick={handleCheckIn}
                 disabled={checkingIn}
-                className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold py-4 rounded-xl transition text-lg"
+                className="w-full bg-luxury-gold hover:bg-[#7a654a] disabled:opacity-50 text-white font-bold py-5 rounded-sm transition-all duration-500 text-[13px] uppercase tracking-[0.3em] shadow-xl active:scale-95"
               >
-                {checkingIn ? 'Checking in…' : `✓ Check in ${scanResult.name}`}
+                {checkingIn ? 'Processing…' : `Confirm Arrival`}
               </button>
             </div>
           )}
 
           {/* Arrived */}
           {(scanResult.status === 'arrived' || checkedIn) && (
-            <div className="text-center space-y-3">
-              <div className="text-6xl">✅</div>
-              <p className="text-3xl font-bold text-emerald-300">Arrived</p>
-              <p className="text-xl font-semibold text-white">{scanResult.name}</p>
-              {scanResult.arrivedAt && (
-                <p className="text-sm text-gray-400">
-                  Checked in at {new Date(scanResult.arrivedAt).toLocaleTimeString()}
-                </p>
-              )}
-              {checkedIn && <p className="text-sm text-gray-400">
-                Checked in just now
-              </p>}
+            <div className="text-center space-y-6">
+              <div className="w-28 h-28 rounded-full overflow-hidden mx-auto border-4 border-emerald-500/20 p-1 bg-white shadow-2xl">
+                 {scanResult.portraitUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={scanResult.portraitUrl} alt={scanResult.name} className="w-full h-full object-cover rounded-full" />
+                  ) : (
+                    <div className="w-full h-full bg-emerald-50 flex items-center justify-center text-emerald-600 text-2xl font-cormorant">
+                      {scanResult.name?.charAt(0)}
+                    </div>
+                  )}
+              </div>
+              <div className="space-y-1">
+                <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-[0.3em]">Arrived & Verified</p>
+                <p className="text-2xl font-cormorant text-luxury-dark uppercase tracking-widest">{scanResult.name}</p>
+                {scanResult.arrivedAt && (
+                  <p className="text-[10px] text-luxury-muted uppercase tracking-widest mt-2">
+                    Entry at {new Date(scanResult.arrivedAt).toLocaleTimeString()}
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
@@ -234,9 +265,9 @@ export default function QRScanner() {
 
           <button
             onClick={resetScan}
-            className="w-full mt-6 border border-gray-700 text-gray-400 hover:text-white py-3 rounded-xl transition font-medium"
+            className="w-full mt-10 border border-gray-100 text-luxury-muted hover:text-luxury-dark hover:border-gray-300 py-4 rounded-sm transition-all duration-500 font-bold text-[10px] uppercase tracking-[0.3em]"
           >
-            Scan next guest →
+            Scan Next Guest
           </button>
         </div>
       )}

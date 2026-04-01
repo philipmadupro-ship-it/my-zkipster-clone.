@@ -11,6 +11,8 @@ interface Guest {
   qrCodeUrl: string;
   seatNumber?: string;
   campaignId?: string;
+  dietary?: string;
+  carService?: string;
 }
 
 interface Campaign {
@@ -27,6 +29,8 @@ export default function LuxuryRSVPClient({ guest, campaign }: { guest: Guest, ca
     guest.status !== 'invited' ? 'confirmed' : 'idle'
   );
   const [qrCodeUrl, setQrCodeUrl] = useState(guest.qrCodeUrl);
+  const [dietary, setDietary] = useState(guest.dietary || '');
+  const [carService, setCarService] = useState(guest.carService || '');
   const [error, setError] = useState('');
 
   async function handleConfirm(e: React.FormEvent) {
@@ -36,7 +40,7 @@ export default function LuxuryRSVPClient({ guest, campaign }: { guest: Guest, ca
       const res = await fetch('/api/confirm-rsvp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ guestId: guest.id, name }),
+        body: JSON.stringify({ guestId: guest.id, name, dietary, carService }),
       });
       const data = await res.json();
       if (res.status === 409) {
@@ -55,7 +59,7 @@ export default function LuxuryRSVPClient({ guest, campaign }: { guest: Guest, ca
 
   // If confirmed, show the elegant invitation view
   if (state === 'confirmed') {
-    return <LuxuryInvitation guest={{ ...guest, name: name || guest.name, status: 'confirmed', qrCodeUrl }} campaign={campaign} />;
+    return <LuxuryInvitation guest={{ ...guest, name: name || guest.name, status: 'confirmed', qrCodeUrl, dietary, carService }} campaign={campaign} />;
   }
 
   return (
@@ -97,6 +101,32 @@ export default function LuxuryRSVPClient({ guest, campaign }: { guest: Guest, ca
                     required
                     className="w-full bg-transparent border-b border-gray-200 py-4 text-lg text-luxury-dark outline-none focus:border-luxury-gold transition-all duration-500 placeholder:text-gray-300 font-light tracking-wide uppercase"
                   />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted ml-0.5">Dietary Requirements</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. VEGAN, GLUTEN FREE"
+                      value={dietary}
+                      onChange={e => setDietary(e.target.value)}
+                      className="w-full bg-transparent border-b border-gray-200 py-4 text-sm text-luxury-dark outline-none focus:border-luxury-gold transition-all duration-500 placeholder:text-gray-200 font-light tracking-wide uppercase"
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted ml-0.5">Car Service Request</label>
+                    <select
+                      value={carService}
+                      onChange={e => setCarService(e.target.value)}
+                      className="w-full bg-transparent border-b border-gray-200 py-4 text-sm text-luxury-dark outline-none focus:border-luxury-gold transition-all duration-500 cursor-pointer uppercase font-light tracking-wide"
+                    >
+                      <option value="">NO SERVICE REQUIRED</option>
+                      <option value="PICKUP">PICKUP REQUESTED</option>
+                      <option value="ROUNDTRIP">ROUND-TRIP SERVICE</option>
+                      <option value="DROPOFF">DROP-OFF ONLY</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4 pt-4">

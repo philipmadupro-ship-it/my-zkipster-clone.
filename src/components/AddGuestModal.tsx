@@ -18,21 +18,27 @@ export interface GuestData {
   campaignId: string;
   category?: string;
   extraFields?: Record<string, string>;
+  portraitUrl?: string;
+  parentId?: string;
+  seatNumber?: string;
 }
 
 interface Props {
   campaignId: string;
+  guests: GuestData[];
   onGuestAdded: (guest: GuestData) => void;
   onClose: () => void;
 }
 
-export default function AddGuestModal({ campaignId, onGuestAdded, onClose }: Props) {
+export default function AddGuestModal({ campaignId, guests, onGuestAdded, onClose }: Props) {
   const { user } = useAuth();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [category, setCategory] = useState('Standard');
   const [seatNumber, setSeatNumber] = useState('');
+  const [portraitUrl, setPortraitUrl] = useState('');
+  const [parentId, setParentId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -55,7 +61,9 @@ export default function AddGuestModal({ campaignId, onGuestAdded, onClose }: Pro
           category,
           campaignId, 
           ownerEmail: user?.email?.toLowerCase(),
-          seatNumber: seatNumber.trim()
+          seatNumber: seatNumber.trim(),
+          portraitUrl: portraitUrl.trim(),
+          parentId: parentId
         }),
       });
       const data = await res.json();
@@ -153,6 +161,34 @@ export default function AddGuestModal({ campaignId, onGuestAdded, onClose }: Pro
                   className="w-full bg-transparent border-b border-white/10 py-3 text-white outline-none focus:border-white transition-colors placeholder:text-gray-800 text-sm"
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500 ml-1">Portrait Image URL (PR Recognition)</label>
+              <input
+                type="url"
+                placeholder="https://example.com/portrait.jpg"
+                value={portraitUrl}
+                onChange={(e) => setPortraitUrl(e.target.value)}
+                className="w-full bg-transparent border-b border-white/10 py-3 text-white outline-none focus:border-white transition-colors placeholder:text-gray-800 text-sm"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500 ml-1">Relationship (Plus-One of...)</label>
+              <select
+                value={parentId}
+                onChange={(e) => setParentId(e.target.value)}
+                className="w-full bg-transparent border-b border-white/10 py-3 text-white outline-none focus:border-white transition-colors appearance-none cursor-pointer text-sm"
+              >
+                <option value="" className="bg-black text-gray-500">None / Principal Guest</option>
+                {guests.filter(g => !g.parentId).map(g => (
+                  <option key={g.id} value={g.id} className="bg-black text-white">
+                    {g.firstName} {g.lastName}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[9px] text-gray-600 mt-1 italic">Link this guest as a companion or plus-one to a principal attendee.</p>
             </div>
 
             <div className="flex gap-4 pt-6">

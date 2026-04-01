@@ -5,11 +5,15 @@ import React from 'react';
 interface Guest {
   id: string;
   name: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   status: string;
   qrCodeUrl: string;
   seatNumber?: string;
   campaignId?: string;
+  dietary?: string;
+  carService?: string;
 }
 
 interface Campaign {
@@ -41,10 +45,10 @@ export default function LuxuryInvitation({ guest, campaign }: { guest: Guest | n
           {/* Greeting & Message */}
           <section className="space-y-6 mb-12 animate-fade-up delay-200">
             <h2 className="text-2xl font-medium text-luxury-dark">
-              Dear {name},
+              Dear {guest?.firstName && guest?.lastName ? `${guest.firstName} ${guest.lastName}` : name.split(' ').filter((v, i, a) => !a.some((x, j) => j < i && x.toLowerCase() === v.toLowerCase())).join(' ')},
             </h2>
             <p className="text-luxury-muted leading-relaxed max-w-[400px] mx-auto text-[15px]">
-              We are delighted to confirm your invitation to the <span className="bg-luxury-highlight px-1 text-luxury-dark font-medium">{campaign?.name || 'Exclusive Fashion Event'}</span>.
+              We are delighted to confirm your invitation to the <span className="text-luxury-dark font-medium border-b border-luxury-gold/30 pb-0.5 tracking-tighter">{campaign?.name || 'Exclusive Fashion Event'}</span>.
             </p>
           </section>
 
@@ -64,6 +68,26 @@ export default function LuxuryInvitation({ guest, campaign }: { guest: Guest | n
               <span className="text-[11px] font-bold uppercase tracking-widest text-luxury-dark w-28 shrink-0">Seat number:</span>
               <span className="text-[14px] text-luxury-dark">{guest?.seatNumber || '—'}</span>
             </div>
+            {(guest?.dietary || guest?.carService) && (
+              <div className="pt-4 border-t border-luxury-gold/10 mt-4 space-y-4">
+                {guest?.dietary && (
+                  <div className="flex flex-col sm:flex-row sm:gap-2">
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-luxury-dark w-28 shrink-0">Dietary:</span>
+                    <span className="text-[14px] text-luxury-dark uppercase tracking-wide">{guest.dietary}</span>
+                  </div>
+                )}
+                {guest?.carService && (
+                  <div className="flex flex-col sm:flex-row sm:gap-2">
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-luxury-dark w-28 shrink-0">Transport:</span>
+                    <span className="text-[14px] text-luxury-dark uppercase tracking-wide">
+                      {guest.carService === 'PICKUP' ? 'Pickup Requested' : 
+                       guest.carService === 'ROUNDTRIP' ? 'Round-trip Service' : 
+                       guest.carService === 'DROPOFF' ? 'Drop-off Only' : guest.carService}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </section>
 
           {/* QR Code Section */}
@@ -88,7 +112,7 @@ export default function LuxuryInvitation({ guest, campaign }: { guest: Guest | n
             
             <div className="space-y-4 max-w-[380px]">
               <p className="text-[13px] text-luxury-dark leading-relaxed">
-                Please present the QR code attached to this email at the entrance to check in. To ensure a smooth experience, kindly arrive <strong>30 minutes before showtime</strong>.
+                Please present the QR code attached to this email at the entrance to check in.
               </p>
               <p className="text-[13px] text-luxury-muted italic text-center">
                 For attendance changes, please notify us at <span className="underline">pressoffice@ungaro.com</span>

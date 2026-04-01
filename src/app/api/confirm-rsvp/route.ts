@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const { guestId, name } = await req.json();
+    const { guestId, name, dietary, carService } = await req.json();
 
     if (!guestId || !name) {
       return NextResponse.json({ error: 'guestId and name are required' }, { status: 400 });
@@ -29,6 +29,8 @@ export async function POST(req: NextRequest) {
     await docRef.update({
       name: name.trim(),
       status: 'confirmed',
+      dietary: dietary?.trim() || '',
+      carService: carService?.trim() || '',
       confirmedAt: FieldValue.serverTimestamp(),
     });
 

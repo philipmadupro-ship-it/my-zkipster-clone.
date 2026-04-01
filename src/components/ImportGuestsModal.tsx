@@ -56,6 +56,8 @@ export default function ImportGuestsModal({ campaignId, onImported, onClose }: P
       const nameIdx = findColumnIdx(detectedHeaders, ['name', 'fullname']);
       const emailIdx = findColumnIdx(detectedHeaders, ['email', 'mail']);
       const categoryIdx = findColumnIdx(detectedHeaders, ['category', 'vip', 'type', 'status']);
+      const portraitIdx = findColumnIdx(detectedHeaders, ['portrait', 'image', 'photo']);
+      const parentIdx = findColumnIdx(detectedHeaders, ['parent', 'plusone', 'plus-one', 'principal']);
 
       if (firstIdx === -1 && lastIdx === -1 && nameIdx === -1) {
         setError('Could not find Name columns. Please ensure you have "First Name" and "Last Name" columns.');
@@ -80,9 +82,11 @@ export default function ImportGuestsModal({ campaignId, onImported, onClose }: P
         const row: ParsedRow = { firstName: first, lastName: last };
         if (emailIdx !== -1 && cols[emailIdx]) row.email = cols[emailIdx];
         if (categoryIdx !== -1 && cols[categoryIdx]) row.category = cols[categoryIdx];
+        if (portraitIdx !== -1 && cols[portraitIdx]) row.portraitUrl = cols[portraitIdx];
+        if (parentIdx !== -1 && cols[parentIdx]) row.parentId = cols[parentIdx];
 
         detectedHeaders.forEach((h, idx) => {
-          if (idx !== firstIdx && idx !== lastIdx && idx !== nameIdx && idx !== emailIdx && idx !== categoryIdx && cols[idx]) {
+          if (idx !== firstIdx && idx !== lastIdx && idx !== nameIdx && idx !== emailIdx && idx !== categoryIdx && idx !== portraitIdx && idx !== parentIdx && cols[idx]) {
             row[h] = cols[idx];
           }
         });
@@ -105,6 +109,8 @@ export default function ImportGuestsModal({ campaignId, onImported, onClose }: P
       const nameKey = detectedHeaders.find(h => ['name', 'fullname'].some(kw => h.toLowerCase().includes(kw)));
       const emailKey = detectedHeaders.find(h => ['email', 'mail'].some(kw => h.toLowerCase().includes(kw)));
       const categoryKey = detectedHeaders.find(h => ['category', 'vip', 'type', 'status'].some(kw => h.toLowerCase().includes(kw)));
+      const portraitKey = detectedHeaders.find(h => ['portrait', 'image', 'photo'].some(kw => h.toLowerCase().includes(kw)));
+      const parentKey = detectedHeaders.find(h => ['parent', 'plusone', 'plus-one', 'principal'].some(kw => h.toLowerCase().includes(kw)));
 
       if (!firstKey && !lastKey && !nameKey) {
         setError('Could not find Name columns. Please ensure you have "First Name" and "Last Name" columns.');
@@ -127,9 +133,11 @@ export default function ImportGuestsModal({ campaignId, onImported, onClose }: P
         const entry: ParsedRow = { firstName: first, lastName: last };
         if (emailKey && row[emailKey]) entry.email = String(row[emailKey]).trim();
         if (categoryKey && row[categoryKey]) entry.category = String(row[categoryKey]).trim();
+        if (portraitKey && row[portraitKey]) entry.portraitUrl = String(row[portraitKey]).trim();
+        if (parentKey && row[parentKey]) entry.parentId = String(row[parentKey]).trim();
 
         detectedHeaders.forEach(k => {
-          if (k !== firstKey && k !== lastKey && k !== nameKey && k !== emailKey && k !== categoryKey && row[k] !== '' && row[k] !== undefined) {
+          if (k !== firstKey && k !== lastKey && k !== nameKey && k !== emailKey && k !== categoryKey && k !== portraitKey && k !== parentKey && row[k] !== '' && row[k] !== undefined) {
             entry[k] = String(row[k]);
           }
         });

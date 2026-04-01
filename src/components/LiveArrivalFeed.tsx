@@ -35,9 +35,19 @@ export default function LiveArrivalFeed({ guests }: { guests: GuestData[] }) {
       <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar">
         {arrivals.map((event, idx) => (
           <div key={event.id} className={`flex items-start gap-4 p-4 rounded-2xl border border-white/[0.03] bg-white/[0.01] transition-all duration-700 animate-in slide-in-from-right-4 ${idx === 0 ? 'border-white/10 bg-white/[0.04]' : ''}`}>
-            <div className={`w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-xs font-bold 
+            <div className={`w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-xs font-bold overflow-hidden
               ${event.category === 'VIP' ? 'bg-white text-black' : 'bg-white/5 text-gray-400'}`}>
-              {(event.firstName || event.name || '?').charAt(0)}
+              {event.portraitUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img 
+                  src={event.portraitUrl} 
+                  alt={event.firstName} 
+                  className="w-full h-full object-cover"
+                  onError={(e) => { (e.target as any).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(event.firstName || 'G')}&background=333&color=fff`; }}
+                />
+              ) : (
+                (event.firstName || event.name || '?').charAt(0)
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate tracking-tight">{event.firstName} {event.lastName}</p>

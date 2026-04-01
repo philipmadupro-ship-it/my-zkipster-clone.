@@ -17,6 +17,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       name: data.name,
       email: data.email,
       status: data.status,
+      portraitUrl: data.portraitUrl ?? null,
+      category: data.category ?? 'Standard',
+      seatNumber: data.seatNumber ?? '—',
       arrivedAt: data.arrivedAt?.toDate?.()?.toISOString() ?? data.arrivedAt ?? null,
     });
   } catch (err) {
