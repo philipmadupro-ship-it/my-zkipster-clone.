@@ -15,6 +15,7 @@ const LiveArrivalFeed = dynamic(() => import('./LiveArrivalFeed'), { ssr: false 
 const ArrivalAnalytics = dynamic(() => import('./ArrivalAnalytics'), { ssr: false });
 const QRScanner = dynamic(() => import('./QRScanner'), { ssr: false });
 const SendInvitationsModal = dynamic(() => import('./SendInvitationsModal'), { ssr: false });
+const EditGuestModal = dynamic(() => import('./EditGuestModal'), { ssr: false });
 
 export interface CampaignData {
   id: string;
@@ -58,6 +59,8 @@ export default function AdminDashboard() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [editingGuest, setEditingGuest] = useState<GuestData | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -377,40 +380,40 @@ export default function AdminDashboard() {
                     <span>{selectedCampaign.eventVenue || 'No Venue'}</span>
                   </div>
                 </div>
-               
-               <div className="flex items-center gap-4">
-                  <div className="flex items-center bg-white/5 border border-white/10 rounded-2xl px-1 py-1">
-                    <code className="text-[10px] text-gray-500 px-4 font-mono">
-                      {origin.replace(/^https?:\/\//, '')}/c/{selectedCampaign.id.slice(0, 8)}...
-                    </code>
-                    <button
-                      onClick={copyCampaignLink}
-                      className="bg-white text-black text-[10px] font-bold px-4 py-2 rounded-xl transition hover:bg-gray-200 active:scale-95"
-                    >
-                      COPY LINK
-                    </button>
-                  </div>
-                  <div className="w-[1px] h-8 bg-white/5 mx-1" />
-                  <button
-                    onClick={() => setShowEmailModal(true)}
-                    className="bg-luxury-gold text-white text-[11px] font-bold px-6 py-2.5 rounded-2xl transition hover:bg-[#7a654a] active:scale-95 shadow-lg flex items-center gap-2"
-                  >
-                    <span>✉️</span> DISPATCH
-                  </button>
-                  <div className="w-[1px] h-8 bg-white/5 mx-1" />
-                  <button
-                    onClick={() => setShowImport(true)}
-                    className="bg-white/5 hover:bg-white/10 text-white text-[11px] font-bold px-5 py-2.5 rounded-2xl border border-white/10 transition active:scale-95"
-                  >
-                    IMPORT
-                  </button>
-                  <button
-                    onClick={() => setShowAdd(true)}
-                    className="bg-white text-black text-[11px] font-bold px-5 py-2.5 rounded-2xl transition hover:bg-gray-200 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
-                  >
-                    + ADD GUEST
-                  </button>
-               </div>
+                      <div className="flex flex-wrap items-center justify-end gap-3 sm:gap-4 flex-1 mt-2 lg:mt-0">
+                   <div className="hidden sm:flex items-center bg-white/5 border border-white/10 rounded-2xl px-1 py-1">
+                     <code className="text-[9px] text-gray-500 px-3 font-mono">
+                       {origin.replace(/^https?:\/\//, '')}/c/{selectedCampaign.id.slice(0, 8)}...
+                     </code>
+                     <button
+                       onClick={copyCampaignLink}
+                       className="bg-white text-black text-[9px] font-bold px-3 py-2 rounded-xl transition hover:bg-gray-200 active:scale-95"
+                     >
+                       LINK
+                     </button>
+                   </div>
+                   
+                   <button
+                     onClick={() => setShowEmailModal(true)}
+                     className="bg-luxury-gold text-white text-[10px] sm:text-[11px] font-bold px-4 sm:px-6 py-2.5 rounded-2xl transition hover:bg-[#7a654a] active:scale-95 shadow-lg flex items-center gap-2"
+                   >
+                     <span>✉️</span> DISPATCH
+                   </button>
+                   
+                   <button
+                     onClick={() => setShowImport(true)}
+                     className="bg-white/5 hover:bg-white/10 text-white text-[10px] sm:text-[11px] font-bold px-4 sm:px-5 py-2.5 rounded-2xl border border-white/10 transition active:scale-95"
+                   >
+                     IMPORT
+                   </button>
+                   
+                   <button
+                     onClick={() => setShowAdd(true)}
+                     className="bg-white text-black text-[10px] sm:text-[11px] font-bold px-5 sm:px-6 py-2.5 rounded-2xl transition hover:bg-gray-200 active:scale-95 shadow-[0_0_25px_rgba(255,255,255,0.15)] ring-2 ring-white/5"
+                   >
+                     + ADD GUEST
+                   </button>
+                </div>
             </header>
 
             <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
@@ -530,6 +533,13 @@ export default function AdminDashboard() {
                                 </td>
                                 <td className="px-6 py-6 text-right flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0">
                                   <button 
+                                    onClick={() => { setEditingGuest(guest); setShowEdit(true); }}
+                                    className="p-2.5 bg-white/5 hover:bg-luxury-gold text-gray-400 hover:text-white rounded-xl border border-white/5 transition-all duration-300"
+                                    title="Edit guest"
+                                  >
+                                    ✍️
+                                  </button>
+                                  <button 
                                     onClick={() => handleDeleteGuest(guest.id, guest.name || 'this guest')} 
                                     disabled={isDeleting}
                                     className="p-2.5 bg-white/5 hover:bg-red-500/80 text-gray-400 hover:text-white rounded-xl border border-white/5 transition-all duration-300"
@@ -628,6 +638,20 @@ export default function AdminDashboard() {
           guests={guests}
           onClose={() => setShowEmailModal(false)}
           onSent={(count) => showToast(`Successfully dispatched ${count} invitations!`, 'success')}
+        />
+      )}
+
+      {showEdit && editingGuest && (
+        <EditGuestModal
+          guest={editingGuest}
+          onGuestUpdated={(updated) => {
+            // Updated directly in Firestore, but let's refresh locally if needed
+            // Actually AdminDashboard has listeners or re-fetches
+            setShowEdit(false);
+            setEditingGuest(null);
+            showToast('Registry updated!', 'success');
+          }}
+          onClose={() => { setShowEdit(false); setEditingGuest(null); }}
         />
       )}
     </div>
