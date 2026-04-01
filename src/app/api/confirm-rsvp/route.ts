@@ -29,8 +29,6 @@ export async function POST(req: NextRequest) {
     await docRef.update({
       name: name.trim(),
       status: 'confirmed',
-      dietary: dietary?.trim() || '',
-      carService: carService?.trim() || '',
       confirmedAt: FieldValue.serverTimestamp(),
     });
 

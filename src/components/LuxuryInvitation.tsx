@@ -12,8 +12,6 @@ interface Guest {
   qrCodeUrl: string;
   seatNumber?: string;
   campaignId?: string;
-  dietary?: string;
-  carService?: string;
 }
 
 interface Campaign {
@@ -68,26 +66,6 @@ export default function LuxuryInvitation({ guest, campaign }: { guest: Guest | n
               <span className="text-[11px] font-bold uppercase tracking-widest text-luxury-dark w-28 shrink-0">Seat number:</span>
               <span className="text-[14px] text-luxury-dark">{guest?.seatNumber || '—'}</span>
             </div>
-            {(guest?.dietary || guest?.carService) && (
-              <div className="pt-4 border-t border-luxury-gold/10 mt-4 space-y-4">
-                {guest?.dietary && (
-                  <div className="flex flex-col sm:flex-row sm:gap-2">
-                    <span className="text-[11px] font-bold uppercase tracking-widest text-luxury-dark w-28 shrink-0">Dietary:</span>
-                    <span className="text-[14px] text-luxury-dark uppercase tracking-wide">{guest.dietary}</span>
-                  </div>
-                )}
-                {guest?.carService && (
-                  <div className="flex flex-col sm:flex-row sm:gap-2">
-                    <span className="text-[11px] font-bold uppercase tracking-widest text-luxury-dark w-28 shrink-0">Transport:</span>
-                    <span className="text-[14px] text-luxury-dark uppercase tracking-wide">
-                      {guest.carService === 'PICKUP' ? 'Pickup Requested' : 
-                       guest.carService === 'ROUNDTRIP' ? 'Round-trip Service' : 
-                       guest.carService === 'DROPOFF' ? 'Drop-off Only' : guest.carService}
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
           </section>
 
           {/* QR Code Section */}

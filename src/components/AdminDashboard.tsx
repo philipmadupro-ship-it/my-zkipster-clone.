@@ -14,6 +14,7 @@ const ImportGuestsModal = dynamic(() => import('./ImportGuestsModal'), { ssr: fa
 const LiveArrivalFeed = dynamic(() => import('./LiveArrivalFeed'), { ssr: false });
 const ArrivalAnalytics = dynamic(() => import('./ArrivalAnalytics'), { ssr: false });
 const QRScanner = dynamic(() => import('./QRScanner'), { ssr: false });
+const SendInvitationsModal = dynamic(() => import('./SendInvitationsModal'), { ssr: false });
 
 export interface CampaignData {
   id: string;
@@ -56,6 +57,7 @@ export default function AdminDashboard() {
   const [origin, setOrigin] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -390,6 +392,13 @@ export default function AdminDashboard() {
                   </div>
                   <div className="w-[1px] h-8 bg-white/5 mx-1" />
                   <button
+                    onClick={() => setShowEmailModal(true)}
+                    className="bg-luxury-gold text-white text-[11px] font-bold px-6 py-2.5 rounded-2xl transition hover:bg-[#7a654a] active:scale-95 shadow-lg flex items-center gap-2"
+                  >
+                    <span>✉️</span> DISPATCH
+                  </button>
+                  <div className="w-[1px] h-8 bg-white/5 mx-1" />
+                  <button
                     onClick={() => setShowImport(true)}
                     className="bg-white/5 hover:bg-white/10 text-white text-[11px] font-bold px-5 py-2.5 rounded-2xl border border-white/10 transition active:scale-95"
                   >
@@ -611,6 +620,15 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {showEmailModal && selectedCampaign && (
+        <SendInvitationsModal
+          campaignId={selectedCampaign.id}
+          guests={guests}
+          onClose={() => setShowEmailModal(false)}
+          onSent={(count) => showToast(`Successfully dispatched ${count} invitations!`, 'success')}
+        />
       )}
     </div>
   );
