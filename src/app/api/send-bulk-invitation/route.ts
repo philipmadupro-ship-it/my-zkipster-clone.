@@ -45,11 +45,14 @@ export async function POST(req: NextRequest) {
 
     const host = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-    // 3. Process guests in parallel (with limited concurrency if needed, but for 100 Promise.all is fine)
-    await Promise.all(guestIds.map(async (guestId) => {
+    // 3. Process guests strictly sequentially (as requested by user: 'not at the same time')
+    for (const guestId of guestIds) {
       try {
         const guestDoc = await db.collection('guests').doc(guestId).get();
-        if (!guestDoc.exists) return;
+        if (!guestDoc.exists) {
+          results.failed++;
+          continue;
+        }
         const guest = guestDoc.data()!;
 
         const rsvpLink = `${host}/rsvp/${guestId}`;
@@ -84,11 +87,13 @@ export async function POST(req: NextRequest) {
         }
 
         results.success++;
+        // Optional: Adding a tiny delay to ensure Outlook doesn't throttle
+        await new Promise(r => setTimeout(r, 100)); 
       } catch (err) {
         console.error(`Failed to send to ${guestId}:`, err);
         results.failed++;
       }
-    }));
+    }
 
     return NextResponse.json({ 
       success: true, 

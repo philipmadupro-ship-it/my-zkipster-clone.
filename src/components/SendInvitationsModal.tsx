@@ -7,7 +7,7 @@ interface Props {
   campaignId: string;
   guests: GuestData[];
   onClose: () => void;
-  onSent: (count: number) => void;
+  onSent: (success: number, failed: number) => void;
 }
 
 export default function SendInvitationsModal({ campaignId, guests, onClose, onSent }: Props) {
@@ -46,6 +46,7 @@ export default function SendInvitationsModal({ campaignId, guests, onClose, onSe
     
     setTotalBatches(chunks.length);
     let totalSuccess = 0;
+    let totalFailed = 0;
 
     try {
       for (let i = 0; i < chunks.length; i++) {
@@ -65,11 +66,12 @@ export default function SendInvitationsModal({ campaignId, guests, onClose, onSe
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || `Failed to dispatch batch ${i + 1}`);
         
-        totalSuccess += data.count;
+        totalSuccess += data.count || 0;
+        totalFailed += data.failed || 0;
         setSentCount(totalSuccess);
       }
 
-      onSent(totalSuccess);
+      onSent(totalSuccess, totalFailed);
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');

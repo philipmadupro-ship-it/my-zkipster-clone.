@@ -303,7 +303,19 @@ export default function AdminDashboard() {
              ))
            )}
 
+            {selectedCampaign && (
+              <div className="px-3 mb-6">
+                <button
+                  onClick={() => setShowAdd(true)}
+                  className="w-full py-4 bg-white hover:bg-gray-100 text-black text-[10px] font-bold rounded-2xl transition shadow-[0_4px_20px_rgba(255,255,255,0.1)] active:scale-95 flex items-center justify-center gap-2"
+                >
+                  <span className="text-sm">+</span> ADD GUEST TO REGISTRY
+                </button>
+              </div>
+            )}
+
             <div className="pt-6 space-y-4">
+
               <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] px-3">New Campaign</p>
               <form onSubmit={handleCreateCampaign} className="px-3 space-y-3">
                 <input
@@ -399,6 +411,7 @@ export default function AdminDashboard() {
                    >
                      <span>✉️</span> DISPATCH
                    </button>
+                   
                    
                    <button
                      onClick={() => setShowImport(true)}
@@ -636,8 +649,15 @@ export default function AdminDashboard() {
         <SendInvitationsModal
           campaignId={selectedCampaign.id}
           guests={guests}
+          onSent={(success, failed) => {
+            if (failed > 0) {
+              showToast(`Dispatched ${success} successfully. ${failed} failed.`, 'error');
+            } else {
+              showToast(`Successfully dispatched ${success} invitations!`, 'success');
+            }
+            setShowEmailModal(false);
+          }}
           onClose={() => setShowEmailModal(false)}
-          onSent={(count) => showToast(`Successfully dispatched ${count} invitations!`, 'success')}
         />
       )}
 
