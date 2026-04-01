@@ -4,12 +4,12 @@ A full-stack event RSVP and ticketing app built with **Next.js**, **Firebase Fir
 
 ## Features
 
-- Admin dashboard with live guest statuses
-- Add guests from the dashboard
-- Personalized invite email with unique RSVP link
-- RSVP accept/decline flow
-- QR ticket generation on acceptance
-- Ticket email delivery with QR attachment
+- **Couture Dispatch**: Mass invitation system with **Wave-Based Batching** (100 per wave) to ensure SMTP reliability.
+- **Automated RSVP Confirmation**: Instant digital pass delivery with **embedded entry QR codes** sent directly to guest emails.
+- **Unified Guest Registry**: Full **Edit/Delete** capabilities for every guest profile, including portraits and seat assignments.
+- **Luxury Aesthetic**: Minimalist, branded RSVP and invitation views designed for high-society event management.
+- **Integrated Web Scanner**: In-app QR verification with real-time guest profile lookups.
+- **Outlook SMTP Integration**: Professional-grade email delivery via Microsoft 365 infrastructure.
 
 ## Tech Stack
 
