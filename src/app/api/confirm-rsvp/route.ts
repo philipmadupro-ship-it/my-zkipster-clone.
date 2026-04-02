@@ -82,9 +82,6 @@ export async function POST(req: NextRequest) {
             </div>
           </div>
 
-          <p style="font-size: 13px; color: #666; text-align: center; margin-bottom: 30px;">
-            Please present this QR code at the entrance 30 minutes prior to the show start.
-          </p>
 
           <div style="border-top: 1px solid #eee; padding-top: 30px; text-align: center;">
             <p style="font-size: 9px; color: #999; text-transform: uppercase; letter-spacing: 0.4em; margin-bottom: 15px;">Event communications powered by</p>

@@ -61,10 +61,6 @@ export default function LuxuryInvitation({ guest, campaign }: { guest: Guest | n
               <span className="text-[11px] font-bold uppercase tracking-widest text-luxury-dark w-28 shrink-0">Venue:</span>
               <span className="text-[14px] text-luxury-dark">{campaign?.eventVenue || 'Venue TBD'}</span>
             </div>
-            <div className="flex flex-col sm:flex-row sm:gap-2">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-luxury-dark w-28 shrink-0">Seat number:</span>
-              <span className="text-[14px] text-luxury-dark">{guest?.seatNumber || '—'}</span>
-            </div>
           </section>
 
           {/* QR Code Section */}
