@@ -77,9 +77,7 @@ export async function POST(req: NextRequest) {
             </div>
             <div style="border-top: 1px solid #eee; padding-top: 30px; text-align: center;">
               <p style="font-size: 9px; color: #999; text-transform: uppercase; letter-spacing: 0.4em; margin-bottom: 15px;">Event communications powered by</p>
-              <p style="font-size: 24px; color: #8b7355; text-transform: uppercase; letter-spacing: 0.3em; font-weight: 300; margin: 0 0 5px 0;">EMANUEL UNGARO</p>
-              <div style="width: 160px; height: 1px; background-color: #8b7355; opacity: 0.5; margin: 8px auto;"></div>
-              <p style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.5em; margin: 0;">PARIS</p>
+              <p style="font-family: 'Futura', 'Century Gothic', 'Arial Black', sans-serif; font-size: 28px; color: #000000; font-weight: bold; text-transform: lowercase; letter-spacing: -0.02em; margin: 0; line-height: 1;">emanuel ungaro</p>
             </div>
           </div>
         `;

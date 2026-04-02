@@ -108,12 +108,10 @@ export default function LuxuryInvitation({ guest, campaign }: { guest: Guest | n
           </div>
           
           <div className="pt-4 space-y-3">
-            <p className="text-[9px] uppercase tracking-[0.4em] text-luxury-muted font-light">Event communications powered by</p>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 80" fill="none" className="h-14 mx-auto opacity-60">
-              <text x="200" y="35" textAnchor="middle" fontFamily="'Times New Roman', Times, serif" fontSize="28" fontWeight="300" letterSpacing="12" fill="#8b7355">EMANUEL UNGARO</text>
-              <line x1="120" y1="50" x2="280" y2="50" stroke="#8b7355" strokeWidth="0.5" opacity="0.5"/>
-              <text x="200" y="68" textAnchor="middle" fontFamily="'Times New Roman', Times, serif" fontSize="10" letterSpacing="8" fill="#999999">PARIS</text>
-            </svg>
+            <p className="text-[9px] uppercase tracking-[0.4em] text-gray-400 font-light">Event communications powered by</p>
+            <p className="text-[28px] sm:text-[34px] font-bold lowercase tracking-[-0.02em] text-black leading-none" style={{ fontFamily: "'Futura', 'Century Gothic', 'Arial Black', sans-serif" }}>
+              emanuel ungaro
+            </p>
           </div>
         </footer>
       </main>

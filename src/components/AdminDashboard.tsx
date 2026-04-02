@@ -396,6 +396,13 @@ export default function AdminDashboard() {
             </div>
         </nav>
 
+        {/* Brand Wordmark */}
+        <div className="px-6 py-4 border-t border-white/5 text-center">
+          <p className="text-[20px] font-bold lowercase tracking-[-0.02em] text-white leading-none" style={{ fontFamily: "'Futura', 'Century Gothic', 'Arial Black', sans-serif" }}>
+            emanuel ungaro
+          </p>
+        </div>
+
         <div className="p-4 border-t border-white/5 bg-white/5 backdrop-blur-md">
            <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
