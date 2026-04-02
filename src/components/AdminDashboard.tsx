@@ -10,7 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import dynamic from 'next/dynamic';
 import { type GuestData } from './AddGuestModal';
 
-const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
+import RichTextEditor from './RichTextEditor';
 const AddGuestModal = dynamic(() => import('./AddGuestModal'), { ssr: false });
 const ImportGuestsModal = dynamic(() => import('./ImportGuestsModal'), { ssr: false });
 const LiveArrivalFeed = dynamic(() => import('./LiveArrivalFeed'), { ssr: false });
@@ -459,19 +459,12 @@ function AdminDashboardContent() {
                   onChange={(e) => setNewCampaignEmailImage(e.target.value)}
                   className="w-full bg-gray-950 border border-gray-800 rounded-lg text-[10px] py-2 px-3 outline-none focus:border-violet-600 transition"
                 />
-                <div className="text-[10px] rounded-lg overflow-hidden border border-gray-800 bg-gray-950 text-white leading-normal">
-                  {/* <ReactQuill
-                    theme="snow"
+                <div className="rounded-lg overflow-hidden border border-gray-800 bg-gray-950 text-white leading-normal">
+                  <RichTextEditor
                     value={newCampaignMessage}
                     onChange={setNewCampaignMessage}
                     placeholder="Write your email securely here... (bold, italic, etc)"
-                    className="h-24 mb-10 text-white"
-                  /> */}
-                  <textarea
-                    value={newCampaignMessage}
-                    onChange={(e) => setNewCampaignMessage(e.target.value)}
-                    placeholder="Write your email securely here... (Plain text backup mode)"
-                    className="w-full bg-transparent border-none p-3 h-24 outline-none text-white text-[10px] resize-none"
+                    className="min-h-[100px] text-white"
                   />
                 </div>
                 <button 
