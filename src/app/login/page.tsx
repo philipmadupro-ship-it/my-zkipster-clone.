@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import UngaroLogo from '@/components/UngaroLogo';
 import {
   sendSignInLinkToEmail,
   isSignInWithEmailLink,
@@ -110,8 +111,7 @@ function LoginContent() {
 
       <div className="w-full max-w-lg relative animate-in fade-in zoom-in-95 duration-1000">
         <div className="text-center mb-12 space-y-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/ungaro-logo-white.png" alt="emanuel ungaro" className="h-10 sm:h-12 mx-auto" />
+          <UngaroLogo className="h-14 sm:h-16" color="#FFFFFF" />
           <div className="flex items-center justify-center gap-4">
              <div className="h-px w-8 bg-white/20" />
              <p className="text-[10px] text-gray-500 uppercase tracking-[0.5em] font-bold">Secure Access</p>
@@ -220,10 +220,9 @@ function LoginContent() {
           )}
         </div>
         
-        <div className="text-center mt-12 space-y-2">
+        <div className="text-center mt-12 space-y-4">
           <p className="text-[9px] text-gray-800 uppercase tracking-[0.5em] font-bold">EMANUEL UNGARO SECURE ACCESS</p>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/ungaro-logo-white.png" alt="emanuel ungaro" className="h-3 mx-auto opacity-20 grayscale" />
+          <UngaroLogo className="h-6 opacity-20 grayscale" color="#FFFFFF" />
         </div>
       </div>
     </div>

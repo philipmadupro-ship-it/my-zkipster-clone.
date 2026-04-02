@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import UngaroLogo from './UngaroLogo';
 
 interface Guest {
   id: string;
@@ -35,8 +36,7 @@ export default function LuxuryInvitation({ guest, campaign }: { guest: Guest | n
           
           {/* Header Branding */}
           <header className="mb-16 animate-fade-up delay-100">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/ungaro-logo-black.png" alt="emanuel ungaro" className="h-10 sm:h-12 mx-auto" />
+            <UngaroLogo className="h-14 sm:h-16" color="#000000" />
           </header>
 
           {/* Greeting & Message */}
@@ -104,8 +104,7 @@ export default function LuxuryInvitation({ guest, campaign }: { guest: Guest | n
           
           <div className="pt-4 space-y-3">
             <p className="text-[9px] uppercase tracking-[0.4em] text-gray-400 font-light">Event communications powered by</p>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/ungaro-logo-black.png" alt="emanuel ungaro" className="h-8 mx-auto grayscale opacity-60" />
+            <UngaroLogo className="h-10 opacity-70" color="#000000" />
           </div>
         </footer>
       </main>

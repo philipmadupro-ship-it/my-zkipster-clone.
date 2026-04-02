@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import UngaroLogo from './UngaroLogo';
 import { signOut } from 'firebase/auth';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
@@ -279,8 +280,7 @@ export default function AdminDashboard() {
         <div className="p-8 border-b border-white/5">
            <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white text-black rounded-full flex items-center justify-center font-bold text-sm shadow-[0_0_20px_rgba(255,255,255,0.15)]">EU</div>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/ungaro-logo-white.png" alt="emanuel ungaro" className="h-4" />
+              <UngaroLogo className="h-6" color="#FFFFFF" />
            </div>
         </div>
 
@@ -397,10 +397,8 @@ export default function AdminDashboard() {
             </div>
         </nav>
 
-        {/* Brand Wordmark */}
         <div className="px-6 py-4 border-t border-white/5 text-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/ungaro-logo-white.png" alt="emanuel ungaro" className="h-3.5 mx-auto opacity-50" />
+            <UngaroLogo className="h-5 opacity-40" color="#FFFFFF" />
         </div>
 
         <div className="p-4 border-t border-white/5 bg-white/5 backdrop-blur-md">

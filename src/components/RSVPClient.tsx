@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import UngaroLogo from './UngaroLogo';
 
 interface Guest {
   id: string;
@@ -57,8 +58,7 @@ export default function RSVPClient({ guest }: { guest: Guest }) {
       <div className="w-full max-w-xl relative animate-in fade-in zoom-in-95 duration-1000">
         <div className="text-center mb-16">
           <p className="text-[10px] text-gray-700 uppercase tracking-[0.4em] font-bold mb-4">Official Invitation</p>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/ungaro-logo-white.png" alt="emanuel ungaro" className="h-10 sm:h-12 mx-auto mb-2" />
+          <UngaroLogo className="h-14 sm:h-16 mb-2" color="#FFFFFF" />
           <div className="h-px w-12 bg-white/20 mx-auto" />
         </div>
 
@@ -172,10 +172,9 @@ export default function RSVPClient({ guest }: { guest: Guest }) {
           </div>
         </div>
         
-        <div className="text-center mt-12 space-y-2">
+        <div className="text-center mt-12 space-y-4">
           <p className="text-[9px] text-gray-800 uppercase tracking-[0.5em] font-bold">EMANUEL UNGARO EVENT SYSTEM</p>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/ungaro-logo-white.png" alt="emanuel ungaro" className="h-3 mx-auto opacity-20 grayscale" />
+          <UngaroLogo className="h-6 opacity-20 grayscale" color="#FFFFFF" />
         </div>
       </div>
     </div>

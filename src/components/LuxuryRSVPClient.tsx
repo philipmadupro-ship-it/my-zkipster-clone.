@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import LuxuryInvitation from './LuxuryInvitation';
+import UngaroLogo from './UngaroLogo';
 
 interface Guest {
   id: string;
@@ -68,8 +69,7 @@ export default function LuxuryRSVPClient({ guest, campaign }: { guest: Guest, ca
           
           {/* Header Branding */}
           <header className="mb-16 animate-fade-up delay-100">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/ungaro-logo-black.png" alt="emanuel ungaro" className="h-10 sm:h-12 mx-auto" />
+            <UngaroLogo className="h-14 sm:h-16" color="#000000" />
           </header>
 
           {state === 'idle' && (
@@ -143,8 +143,7 @@ export default function LuxuryRSVPClient({ guest, campaign }: { guest: Guest, ca
         {/* Footer with Brand Logo */}
         <footer className="w-full border-t border-gray-100 py-10 px-12 text-center space-y-4 bg-white shrink-0">
           <p className="text-[9px] font-light uppercase tracking-[0.4em] text-gray-400">Event communications powered by</p>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/ungaro-logo-black.png" alt="emanuel ungaro" className="h-8 mx-auto grayscale opacity-60" />
+          <UngaroLogo className="h-10 opacity-70" color="#000000" />
         </footer>
       </main>
     </div>
