@@ -75,125 +75,134 @@ export default function AddGuestModal({ campaignId, guests, onGuestAdded, onClos
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-md transition-opacity animate-in fade-in duration-500" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
       
-      <div className="relative w-full max-w-xl bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500">
-        <div className="p-10">
-          <div className="flex justify-between items-start mb-10">
-            <div className="space-y-1">
-              <h2 className="text-3xl font-display font-bold text-white tracking-tight">Register Guest</h2>
-              <p className="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-bold">Manual Enrollment System</p>
-            </div>
-            <button onClick={onClose} className="p-2 text-gray-600 hover:text-white transition-colors">
-              <span className="text-2xl font-light">✕</span>
-            </button>
+      {/* Modal container: max-h ensures it never overflows the viewport */}
+      <div className="relative w-full max-w-md max-h-[90vh] bg-[#111111] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+        
+        {/* Header - fixed at top */}
+        <div className="px-6 pt-6 pb-4 border-b border-white/5 flex justify-between items-center shrink-0">
+          <div>
+            <h2 className="text-xl font-bold text-white tracking-tight">Register Guest</h2>
+            <p className="text-[9px] text-gray-500 uppercase tracking-[0.2em] font-bold mt-0.5">Manual Enrollment</p>
           </div>
+          <button onClick={onClose} className="p-1.5 text-gray-500 hover:text-white transition-colors">
+            <span className="text-xl font-light">✕</span>
+          </button>
+        </div>
 
-          <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Scrollable form body */}
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="px-6 py-5 space-y-5 overflow-y-auto flex-1">
             {error && (
-              <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-red-400 text-xs font-medium">
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-red-400 text-xs font-medium">
                 {error}
               </div>
             )}
             
-            <div className="grid grid-cols-2 gap-8">
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500 ml-1">First Name</label>
+            {/* Name row */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[9px] uppercase tracking-widest font-bold text-gray-500">First Name</label>
                 <input
                   autoFocus
                   required
                   type="text"
-                  placeholder="e.g. John"
+                  placeholder="John"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full bg-transparent border-b border-white/10 py-3 text-white outline-none focus:border-white transition-colors placeholder:text-gray-800"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-white/30 transition-colors placeholder:text-gray-700"
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500 ml-1">Last Name</label>
+              <div className="space-y-1">
+                <label className="text-[9px] uppercase tracking-widest font-bold text-gray-500">Last Name</label>
                 <input
                   required
                   type="text"
-                  placeholder="e.g. Doe"
+                  placeholder="Doe"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  className="w-full bg-transparent border-b border-white/10 py-3 text-white outline-none focus:border-white transition-colors placeholder:text-gray-800"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-white/30 transition-colors placeholder:text-gray-700"
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500 ml-1">Email Address</label>
+            {/* Email */}
+            <div className="space-y-1">
+              <label className="text-[9px] uppercase tracking-widest font-bold text-gray-500">Email Address</label>
               <input
                 type="email"
-                placeholder="e.g. john@example.com"
+                placeholder="john@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-transparent border-b border-white/10 py-3 text-white outline-none focus:border-white transition-colors placeholder:text-gray-800"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-white/30 transition-colors placeholder:text-gray-700"
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500 ml-1 font-sans">Profile Category / VIP Status</label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full bg-transparent border-b border-white/10 py-3 text-white outline-none focus:border-white transition-colors appearance-none cursor-pointer text-sm"
-              >
-                <option value="Standard" className="bg-black text-white">Standard Guest</option>
-                <option value="VIP" className="bg-black text-white">VIP Profile</option>
-                <option value="Press" className="bg-black text-white">Press / Media</option>
-                <option value="Staff" className="bg-black text-white">Event Staff</option>
-                <option value="Speaker" className="bg-black text-white">Guest Speaker</option>
-              </select>
+            {/* Category + Portrait row */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[9px] uppercase tracking-widest font-bold text-gray-500">Category</label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-white/30 transition-colors appearance-none cursor-pointer"
+                >
+                  <option value="Standard" className="bg-[#111] text-white">Standard</option>
+                  <option value="VIP" className="bg-[#111] text-white">VIP</option>
+                  <option value="Press" className="bg-[#111] text-white">Press</option>
+                  <option value="Staff" className="bg-[#111] text-white">Staff</option>
+                  <option value="Speaker" className="bg-[#111] text-white">Speaker</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[9px] uppercase tracking-widest font-bold text-gray-500">Plus-One of</label>
+                <select
+                  value={parentId}
+                  onChange={(e) => setParentId(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-white/30 transition-colors appearance-none cursor-pointer"
+                >
+                  <option value="" className="bg-[#111] text-gray-500">None</option>
+                  {guests.filter(g => !g.parentId).map(g => (
+                    <option key={g.id} value={g.id} className="bg-[#111] text-white">
+                      {g.firstName} {g.lastName}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500 ml-1">Portrait Image URL (PR Recognition)</label>
+            {/* Portrait URL - optional */}
+            <div className="space-y-1">
+              <label className="text-[9px] uppercase tracking-widest font-bold text-gray-500">Portrait URL <span className="text-gray-700">(optional)</span></label>
               <input
                 type="url"
-                placeholder="https://example.com/portrait.jpg"
+                placeholder="https://example.com/photo.jpg"
                 value={portraitUrl}
                 onChange={(e) => setPortraitUrl(e.target.value)}
-                className="w-full bg-transparent border-b border-white/10 py-3 text-white outline-none focus:border-white transition-colors placeholder:text-gray-800 text-sm"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-white/30 transition-colors placeholder:text-gray-700"
               />
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500 ml-1">Relationship (Plus-One of...)</label>
-              <select
-                value={parentId}
-                onChange={(e) => setParentId(e.target.value)}
-                className="w-full bg-transparent border-b border-white/10 py-3 text-white outline-none focus:border-white transition-colors appearance-none cursor-pointer text-sm"
-              >
-                <option value="" className="bg-black text-gray-500">None / Principal Guest</option>
-                {guests.filter(g => !g.parentId).map(g => (
-                  <option key={g.id} value={g.id} className="bg-black text-white">
-                    {g.firstName} {g.lastName}
-                  </option>
-                ))}
-              </select>
-              <p className="text-[9px] text-gray-600 mt-1 italic">Link this guest as a companion or plus-one to a principal attendee.</p>
-            </div>
-
-            <div className="flex gap-4 pt-6">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 px-6 py-4 rounded-2xl border border-white/10 text-white font-bold text-[11px] uppercase tracking-widest hover:bg-white/5 transition-all active:scale-95"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 px-6 py-4 rounded-2xl bg-white text-black font-bold text-[11px] uppercase tracking-widest hover:bg-gray-200 transition-all active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.2)] disabled:opacity-50"
-              >
-                {loading ? 'Processing...' : 'Complete Registry'}
-              </button>
-            </div>
-          </form>
-        </div>
+          {/* Buttons - ALWAYS pinned at bottom, never scroll away */}
+          <div className="px-6 py-4 border-t border-white/5 flex gap-3 shrink-0 bg-[#111111]">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-3 rounded-xl border border-white/10 text-white font-bold text-[11px] uppercase tracking-widest hover:bg-white/5 transition-all active:scale-95"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 px-4 py-3 rounded-xl bg-white text-black font-bold text-[11px] uppercase tracking-widest hover:bg-gray-200 transition-all active:scale-95 shadow-[0_0_15px_rgba(255,255,255,0.15)] disabled:opacity-50"
+            >
+              {loading ? 'Processing...' : 'Register'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

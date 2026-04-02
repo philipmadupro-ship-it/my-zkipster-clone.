@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { type GuestData } from './AddGuestModal';
 
 interface Props {
@@ -58,103 +58,107 @@ export default function EditGuestModal({ guest, onGuestUpdated, onClose }: Props
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+      
+      {/* Compact modal with max-h viewport constraint */}
       <form 
         onSubmit={handleSubmit}
-        className="relative w-full max-w-lg bg-[#0a0a0a] border border-white/10 rounded-sm shadow-2xl overflow-hidden animate-fade-up"
+        className="relative w-full max-w-md max-h-[90vh] bg-[#111111] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
       >
-        <div className="p-8 border-b border-gray-100 flex items-center justify-between bg-luxury-off-white">
+        {/* Header */}
+        <div className="px-6 pt-6 pb-4 border-b border-white/5 flex items-center justify-between shrink-0">
           <div>
-            <h3 className="font-cormorant text-2xl text-luxury-dark uppercase tracking-widest leading-none">Edit Guest Profile</h3>
-            <p className="text-[10px] text-luxury-muted uppercase tracking-[0.2em] mt-2">Registry Intelligence Management</p>
+            <h3 className="text-xl font-bold text-white tracking-tight">Edit Guest</h3>
+            <p className="text-[9px] text-gray-500 uppercase tracking-[0.2em] font-bold mt-0.5">Registry Update</p>
           </div>
-          <button type="button" onClick={onClose} className="text-luxury-muted hover:text-luxury-dark transition-colors text-xl font-light">✕</button>
+          <button type="button" onClick={onClose} className="p-1.5 text-gray-500 hover:text-white transition-colors">
+            <span className="text-xl font-light">✕</span>
+          </button>
         </div>
 
-        <div className="p-10 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+        {/* Scrollable form body */}
+        <div className="px-6 py-5 space-y-5 overflow-y-auto flex-1 min-h-0">
           {error && (
-            <div className="p-4 bg-red-50 border border-red-100 text-red-600 text-[11px] font-medium rounded-sm uppercase tracking-wider">
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-red-400 text-xs font-medium">
               {error}
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted ml-0.5">First Name</label>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-[9px] uppercase tracking-widest font-bold text-gray-500">First Name</label>
               <input
                 type="text"
                 value={firstName}
                 onChange={e => setFirstName(e.target.value)}
-                className="w-full bg-transparent border-b border-gray-200 py-3 text-sm text-luxury-dark outline-none focus:border-luxury-gold transition-all duration-500 font-medium"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-white/30 transition-colors"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted ml-0.5">Last Name</label>
+            <div className="space-y-1">
+              <label className="text-[9px] uppercase tracking-widest font-bold text-gray-500">Last Name</label>
               <input
                 type="text"
                 value={lastName}
                 onChange={e => setLastName(e.target.value)}
-                className="w-full bg-transparent border-b border-gray-200 py-3 text-sm text-luxury-dark outline-none focus:border-luxury-gold transition-all duration-500 font-medium"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-white/30 transition-colors"
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted ml-0.5">Email Address</label>
+          <div className="space-y-1">
+            <label className="text-[9px] uppercase tracking-widest font-bold text-gray-500">Email Address</label>
             <input
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="w-full bg-transparent border-b border-gray-200 py-3 text-sm text-luxury-dark outline-none focus:border-luxury-gold transition-all duration-500"
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-white/30 transition-colors"
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted ml-0.5">Category</label>
-            <select
-              value={category}
-              onChange={e => setCategory(e.target.value)}
-              className="w-full bg-transparent border-b border-gray-200 py-3 text-sm text-luxury-dark outline-none focus:border-luxury-gold transition-all duration-500 uppercase tracking-widest text-[10px] font-bold"
-            >
-              <option value="VIP">VIP</option>
-              <option value="Press">Press</option>
-              <option value="Influencer">Influencer</option>
-              <option value="Buyer">Buyer</option>
-              <option value="Standard">Standard</option>
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted ml-0.5">Portrait URL</label>
-            <input
-              type="text"
-              value={portraitUrl}
-              onChange={e => setPortraitUrl(e.target.value)}
-              placeholder="https://..."
-              className="w-full bg-transparent border-b border-gray-200 py-3 text-sm text-luxury-dark outline-none focus:border-luxury-gold transition-all duration-500"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-[9px] uppercase tracking-widest font-bold text-gray-500">Category</label>
+              <select
+                value={category}
+                onChange={e => setCategory(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-white/30 transition-colors appearance-none cursor-pointer"
+              >
+                <option value="Standard" className="bg-[#111] text-white">Standard</option>
+                <option value="VIP" className="bg-[#111] text-white">VIP</option>
+                <option value="Press" className="bg-[#111] text-white">Press</option>
+                <option value="Influencer" className="bg-[#111] text-white">Influencer</option>
+                <option value="Buyer" className="bg-[#111] text-white">Buyer</option>
+                <option value="Staff" className="bg-[#111] text-white">Staff</option>
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[9px] uppercase tracking-widest font-bold text-gray-500">Portrait URL</label>
+              <input
+                type="text"
+                value={portraitUrl}
+                onChange={e => setPortraitUrl(e.target.value)}
+                placeholder="https://..."
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-white/30 transition-colors placeholder:text-gray-700"
+              />
+            </div>
           </div>
         </div>
 
-        <div className="p-8 bg-white border-t border-gray-50 flex gap-4">
+        {/* Buttons - ALWAYS pinned at bottom */}
+        <div className="px-6 py-4 border-t border-white/5 flex gap-3 shrink-0 bg-[#111111]">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 py-4 border border-gray-100 text-[11px] font-bold text-luxury-muted uppercase tracking-widest hover:bg-gray-50 transition-all"
+            className="flex-1 px-4 py-3 rounded-xl border border-white/10 text-white font-bold text-[11px] uppercase tracking-widest hover:bg-white/5 transition-all active:scale-95"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 bg-luxury-dark hover:bg-black disabled:opacity-50 text-white font-bold py-4 rounded-sm transition-all duration-500 text-[11px] uppercase tracking-[0.3em] flex items-center justify-center gap-2 shadow-xl"
+            className="flex-1 px-4 py-3 rounded-xl bg-white text-black font-bold text-[11px] uppercase tracking-widest hover:bg-gray-200 transition-all active:scale-95 shadow-[0_0_15px_rgba(255,255,255,0.15)] disabled:opacity-50"
           >
-            {loading ? (
-              <>
-                <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                Updating...
-              </>
-            ) : 'Update Registry'}
+            {loading ? 'Updating...' : 'Update'}
           </button>
         </div>
       </form>
