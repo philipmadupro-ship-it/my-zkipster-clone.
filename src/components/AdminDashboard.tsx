@@ -278,8 +278,8 @@ export default function AdminDashboard() {
       <aside className="w-72 flex-shrink-0 border-r border-white/5 bg-black/40 backdrop-blur-3xl flex flex-col">
         <div className="p-8 border-b border-white/5">
            <div className="flex items-center gap-3">
-             <div className="w-10 h-10 bg-white text-black rounded-full flex items-center justify-center font-display font-bold text-xl shadow-[0_0_20px_rgba(255,255,255,0.15)]">A</div>
-             <h1 className="font-display text-2xl font-bold tracking-tight">Antgravity</h1>
+              <div className="w-10 h-10 bg-white text-black rounded-full flex items-center justify-center font-bold text-sm shadow-[0_0_20px_rgba(255,255,255,0.15)]">EU</div>
+             <h1 className="text-lg font-bold tracking-tight lowercase" style={{ fontFamily: "'Futura', 'Century Gothic', 'Arial Black', sans-serif" }}>emanuel ungaro</h1>
            </div>
         </div>
 

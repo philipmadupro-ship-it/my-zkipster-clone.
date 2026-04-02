@@ -12,7 +12,7 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  title: 'Antgravity — Event Management',
+  title: 'Emanuel Ungaro — Event Management',
   description: 'Professional event RSVP, ticketing, and check-in management.',
 };
 

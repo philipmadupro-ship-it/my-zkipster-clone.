@@ -110,7 +110,7 @@ function LoginContent() {
 
       <div className="w-full max-w-lg relative animate-in fade-in zoom-in-95 duration-1000">
         <div className="text-center mb-12 space-y-3">
-          <h1 className="font-display text-5xl font-bold text-white tracking-tighter">Antgravity</h1>
+          <h1 className="text-3xl sm:text-5xl font-bold text-white tracking-tight lowercase" style={{ fontFamily: "'Futura', 'Century Gothic', 'Arial Black', sans-serif" }}>emanuel ungaro</h1>
           <div className="flex items-center justify-center gap-4">
              <div className="h-px w-8 bg-white/20" />
              <p className="text-[10px] text-gray-500 uppercase tracking-[0.5em] font-bold">Secure Access</p>
@@ -189,7 +189,7 @@ function LoginContent() {
                   </div>
                   <input
                     type="email"
-                    placeholder="authorized@antgravity.system"
+                    placeholder="press@ungaro.com"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     required
@@ -219,7 +219,7 @@ function LoginContent() {
           )}
         </div>
         
-        <p className="text-center mt-12 text-[9px] text-gray-800 uppercase tracking-[0.5em] font-bold">ANTGRAVITY QUANTUM SECURITY</p>
+        <p className="text-center mt-12 text-[9px] text-gray-800 uppercase tracking-[0.5em] font-bold">EMANUEL UNGARO SECURE ACCESS</p>
       </div>
     </div>
   );
