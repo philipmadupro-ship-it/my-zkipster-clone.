@@ -332,8 +332,7 @@ function AdminDashboardContent() {
         <div className="p-8 border-b border-white/5">
            <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white text-black rounded-full flex items-center justify-center font-bold text-sm shadow-[0_0_20px_rgba(255,255,255,0.15)]">EU</div>
-              {/* <UngaroLogo className="h-6" color="#FFFFFF" /> */}
-              <span className="font-bold lowercase tracking-tight text-white">emanuel ungaro</span>
+              <UngaroLogo className="h-6" color="#FFFFFF" />
            </div>
         </div>
 
@@ -487,8 +486,7 @@ function AdminDashboardContent() {
         </nav>
 
         <div className="px-6 py-4 border-t border-white/5 text-center">
-            {/* <UngaroLogo className="h-5 opacity-40" color="#FFFFFF" /> */}
-            <span className="text-[8px] text-gray-700 uppercase tracking-widest font-bold">emanuel ungaro</span>
+            <UngaroLogo className="h-5 opacity-40" color="#FFFFFF" />
         </div>
 
         <div className="p-4 border-t border-white/5 bg-white/5 backdrop-blur-md">
