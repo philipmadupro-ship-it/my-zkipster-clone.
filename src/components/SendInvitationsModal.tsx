@@ -26,6 +26,7 @@ export default function SendInvitationsModal({ campaign, guests, onClose, onSent
   const [sentCount, setSentCount] = useState(0);
   const [error, setError] = useState('');
   const [isDragging, setIsDragging] = useState(false);
+  const [view, setView] = useState<'edit' | 'preview'>('edit');
 
   const targetGuests = target === 'all' 
     ? guests 
@@ -98,7 +99,7 @@ export default function SendInvitationsModal({ campaign, guests, onClose, onSent
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 text-left">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
       <div className="relative w-full max-w-xl bg-white rounded-sm shadow-2xl overflow-hidden animate-fade-up">
         
@@ -111,156 +112,240 @@ export default function SendInvitationsModal({ campaign, guests, onClose, onSent
           <button onClick={onClose} className="text-luxury-muted hover:text-luxury-dark transition-colors text-xl font-light">✕</button>
         </div>
 
+        {/* Tab Navigation */}
+        <div className="flex bg-luxury-off-white border-b border-gray-100">
+          <button
+            onClick={() => setView('edit')}
+            className={`flex-1 py-4 text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 ${
+              view === 'edit' ? 'text-luxury-dark bg-white border-b-2 border-luxury-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            1. Edit Narrative
+          </button>
+          <button
+            onClick={() => setView('preview')}
+            className={`flex-1 py-4 text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 ${
+              view === 'preview' ? 'text-luxury-dark bg-white border-b-2 border-luxury-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            2. High-Fidelity Preview
+          </button>
+        </div>
+
         <div className="p-10 space-y-10 max-h-[75vh] overflow-y-auto custom-scrollbar">
           
-          {/* Section 1: Audience & Identity */}
-          <div className="grid grid-cols-2 gap-10">
-            <div className="space-y-4">
-              <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted">Target Audience</label>
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => setTarget('uninvited')}
-                  className={`py-3 px-4 rounded-sm border text-[10px] font-bold uppercase tracking-widest transition-all duration-300 ${
-                    target === 'uninvited' 
-                      ? 'bg-luxury-dark text-white border-luxury-dark shadow-lg' 
-                      : 'bg-white text-luxury-muted border-gray-100 hover:border-gray-300'
-                  }`}
-                >
-                  Pending Only ({guests.filter(g => g.status === 'pending' || g.status === 'invited').length})
-                </button>
-                <button
-                  onClick={() => setTarget('all')}
-                  className={`py-3 px-4 rounded-sm border text-[10px] font-bold uppercase tracking-widest transition-all duration-300 ${
-                    target === 'all' 
-                      ? 'bg-luxury-dark text-white border-luxury-dark shadow-lg' 
-                      : 'bg-white text-luxury-muted border-gray-100 hover:border-gray-300'
-                  }`}
-                >
-                  All Guests ({guests.length})
-                </button>
+          {view === 'edit' ? (
+            <div className="space-y-10">
+              {/* Section 1: Audience & Identity */}
+              <div className="grid grid-cols-2 gap-10">
+                <div className="space-y-4">
+                  <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted">Target Audience</label>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => setTarget('uninvited')}
+                      className={`py-3 px-4 rounded-sm border text-[10px] font-bold uppercase tracking-widest transition-all duration-300 ${
+                        target === 'uninvited' 
+                          ? 'bg-luxury-dark text-white border-luxury-dark shadow-lg' 
+                          : 'bg-white text-luxury-muted border-gray-100 hover:border-gray-300'
+                      }`}
+                    >
+                      Pending Only ({guests.filter(g => g.status === 'pending' || g.status === 'invited').length})
+                    </button>
+                    <button
+                      onClick={() => setTarget('all')}
+                      className={`py-3 px-4 rounded-sm border text-[10px] font-bold uppercase tracking-widest transition-all duration-300 ${
+                        target === 'all' 
+                          ? 'bg-luxury-dark text-white border-luxury-dark shadow-lg' 
+                          : 'bg-white text-luxury-muted border-gray-100 hover:border-gray-300'
+                      }`}
+                    >
+                      All Guests ({guests.length})
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted">Campaign Language</label>
+                  <div className="flex gap-2">
+                    {(['en', 'fr'] as const).map((l) => (
+                      <button
+                        key={l}
+                        onClick={() => setLanguage(l)}
+                        className={`flex-1 py-3 border rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all duration-300 ${
+                          language === l
+                            ? 'bg-luxury-gold text-white border-luxury-gold shadow-md'
+                            : 'bg-white text-luxury-muted border-gray-100 hover:border-gray-200'
+                        }`}
+                      >
+                        {l === 'en' ? 'English' : 'Français'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-4">
-              <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted">Campaign Language</label>
-              <div className="flex gap-2">
-                {(['en', 'fr'] as const).map((l) => (
-                  <button
-                    key={l}
-                    onClick={() => setLanguage(l)}
-                    className={`flex-1 py-3 border rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all duration-300 ${
-                      language === l
-                        ? 'bg-luxury-gold text-white border-luxury-gold shadow-md'
-                        : 'bg-white text-luxury-muted border-gray-100 hover:border-gray-200'
-                    }`}
-                  >
-                    {l === 'en' ? 'English' : 'Français'}
-                  </button>
-                ))}
+              <hr className="border-gray-50" />
+
+              {/* Section 2: Logo Selection */}
+              <div className="space-y-4">
+                <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted block">Visual Branding (Logo Selection)</label>
+                <div className="grid grid-cols-5 gap-3">
+                  {[
+                    { id: 'black', label: 'Text Black', preview: 'EU' },
+                    { id: 'white', label: 'Text White', preview: 'EU', bg: 'bg-black' },
+                    { id: 'img-pink', label: 'Official Pink', src: '/email-logos/ungaro-pink.png' },
+                    { id: 'img-black', label: 'Official Black', src: '/email-logos/ungaro-black.png' },
+                    { id: 'img-white', label: 'Official White', src: '/email-logos/ungaro-white.png', bg: 'bg-black' }
+                  ].map((variant) => (
+                    <button
+                      key={variant.id}
+                      onClick={() => setLogoVariant(variant.id as any)}
+                      className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all duration-300 flex flex-col items-center justify-center gap-1 ${
+                        variant.bg || 'bg-gray-50'
+                      } ${
+                        logoVariant === variant.id 
+                          ? 'border-luxury-gold ring-4 ring-luxury-gold/10' 
+                          : 'border-transparent hover:border-gray-200'
+                      }`}
+                    >
+                      {variant.src ? (
+                        <img src={variant.src} alt={variant.label} className="w-12 h-auto object-contain" />
+                      ) : (
+                        <span className={`text-xl font-serif font-bold ${variant.id === 'white' ? 'text-white' : 'text-black'}`}>{variant.preview}</span>
+                      )}
+                      <span className={`text-[7px] uppercase tracking-tighter ${variant.id.includes('white') ? 'text-gray-400' : 'text-gray-500'}`}>{variant.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          </div>
 
-          <hr className="border-gray-50" />
-
-          {/* Section 2: Logo Selection */}
-          <div className="space-y-4">
-            <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted block">Visual Branding (Logo Selection)</label>
-            <div className="grid grid-cols-5 gap-3">
-              {[
-                { id: 'black', label: 'Text Black', preview: 'EU' },
-                { id: 'white', label: 'Text White', preview: 'EU', bg: 'bg-black' },
-                { id: 'img-pink', label: 'Official Pink', src: '/email-logos/ungaro-pink.png' },
-                { id: 'img-black', label: 'Official Black', src: '/email-logos/ungaro-black.png' },
-                { id: 'img-white', label: 'Official White', src: '/email-logos/ungaro-white.png', bg: 'bg-black' }
-              ].map((variant) => (
-                <button
-                  key={variant.id}
-                  onClick={() => setLogoVariant(variant.id as any)}
-                  className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all duration-300 flex flex-col items-center justify-center gap-1 ${
-                    variant.bg || 'bg-gray-50'
-                  } ${
-                    logoVariant === variant.id 
-                      ? 'border-luxury-gold ring-4 ring-luxury-gold/10' 
-                      : 'border-transparent hover:border-gray-200'
-                  }`}
-                >
-                  {variant.src ? (
-                    <img src={variant.src} alt={variant.label} className="w-12 h-auto object-contain" />
-                  ) : (
-                    <span className={`text-xl font-serif font-bold ${variant.id === 'white' ? 'text-white' : 'text-black'}`}>{variant.preview}</span>
-                  )}
-                  <span className={`text-[7px] uppercase tracking-tighter ${variant.id.includes('white') ? 'text-gray-400' : 'text-gray-500'}`}>{variant.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Section 3: Subject & Narrative */}
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted">Couture Subject Line</label>
-              <input
-                type="text"
-                value={subject}
-                onChange={e => setSubject(e.target.value)}
-                className="w-full bg-transparent border-b border-gray-100 py-3 text-sm text-luxury-dark outline-none focus:border-luxury-gold transition-all duration-500 font-medium"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted">Personalized Narrative (Rich Text)</label>
-              <div className="border border-gray-100 rounded-sm overflow-hidden bg-gray-50/30">
-                <RichTextEditor
-                  value={customMessage}
-                  onChange={setCustomMessage}
-                  placeholder="Draft your exquisite invitation message..."
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Section 4: Decoration Image (Drag & Drop) */}
-          <div className="space-y-4">
-            <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted">Decoration Image (Drag & Drop)</label>
-            <div 
-              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-              onDragLeave={() => setIsDragging(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setIsDragging(false);
-                const text = e.dataTransfer.getData('text');
-                if (text && text.startsWith('http')) setEmailImageUrl(text);
-              }}
-              className={`border-2 border-dashed rounded-xl p-8 transition-all duration-500 flex flex-col items-center justify-center text-center gap-3 relative overflow-hidden ${
-                isDragging 
-                  ? 'border-luxury-gold bg-luxury-gold/5 scale-[1.02]' 
-                  : emailImageUrl 
-                    ? 'border-emerald-500/20 bg-emerald-500/5' 
-                    : 'border-gray-100 hover:border-gray-300 bg-gray-50/50'
-              }`}
-            >
-              {emailImageUrl ? (
-                <>
-                  <img src={emailImageUrl} alt="Decoration Preview" className="h-20 w-auto object-cover rounded shadow-sm mb-2" />
-                  <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest">Image Mounted</p>
-                  <button onClick={() => setEmailImageUrl('')} className="text-[9px] text-gray-400 hover:text-red-500 underline uppercase tracking-tighter">Remove</button>
-                </>
-              ) : (
-                <>
-                  <div className="text-3xl grayscale opacity-20">🖼️</div>
-                  <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Drop Image URL here</p>
-                  <input 
-                    type="text" 
-                    placeholder="or paste URL"
-                    value={emailImageUrl}
-                    onChange={(e) => setEmailImageUrl(e.target.value)}
-                    className="mt-2 w-full max-w-[200px] bg-white border border-gray-200 rounded px-3 py-1.5 text-[9px] text-center outline-none focus:border-luxury-gold transition-all"
+              {/* Section 3: Subject & Narrative */}
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted">Couture Subject Line</label>
+                  <input
+                    type="text"
+                    value={subject}
+                    onChange={e => setSubject(e.target.value)}
+                    className="w-full bg-transparent border-b border-gray-100 py-3 text-sm text-luxury-dark outline-none focus:border-luxury-gold transition-all duration-500 font-medium"
                   />
-                </>
-              )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted">Personalized Narrative (Rich Text)</label>
+                  <div className="border border-gray-100 rounded-sm overflow-hidden bg-gray-50/30">
+                    <RichTextEditor
+                      value={customMessage}
+                      onChange={setCustomMessage}
+                      placeholder="Draft your exquisite invitation message..."
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 4: Decoration Image (Drag & Drop) */}
+              <div className="space-y-4">
+                <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted">Decoration Image (Drag & Drop)</label>
+                <div 
+                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsDragging(false);
+                    const text = e.dataTransfer.getData('text');
+                    if (text && text.startsWith('http')) setEmailImageUrl(text);
+                  }}
+                  className={`border-2 border-dashed rounded-xl p-8 transition-all duration-500 flex flex-col items-center justify-center text-center gap-3 relative overflow-hidden ${
+                    isDragging 
+                      ? 'border-luxury-gold bg-luxury-gold/5 scale-[1.02]' 
+                      : emailImageUrl 
+                        ? 'border-emerald-500/20 bg-emerald-500/5' 
+                        : 'border-gray-100 hover:border-gray-300 bg-gray-50/50'
+                  }`}
+                >
+                  {emailImageUrl ? (
+                    <>
+                      <img src={emailImageUrl} alt="Decoration Preview" className="h-20 w-auto object-cover rounded shadow-sm mb-2" />
+                      <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest">Image Mounted</p>
+                      <button onClick={() => setEmailImageUrl('')} className="text-[9px] text-gray-400 hover:text-red-500 underline uppercase tracking-tighter">Remove</button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-3xl grayscale opacity-20">🖼️</div>
+                      <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Drop Image URL here</p>
+                      <input 
+                        type="text" 
+                        placeholder="or paste URL"
+                        value={emailImageUrl}
+                        onChange={(e) => setEmailImageUrl(e.target.value)}
+                        className="mt-2 w-full max-w-[200px] bg-white border border-gray-200 rounded px-3 py-1.5 text-[9px] text-center outline-none focus:border-luxury-gold transition-all"
+                      />
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            /* PREVIEW VIEW */
+            <div className="bg-gray-50 p-10 rounded-sm border border-gray-100 shadow-inner animate-in fade-in duration-500">
+               <div className="max-w-[450px] mx-auto bg-white shadow-2xl border border-gray-100 overflow-hidden">
+                  {/* Real-time Email Header */}
+                  <div className={`p-10 text-center ${logoVariant.includes('white') ? 'bg-black' : 'bg-white'}`}>
+                     {logoVariant === 'black' || logoVariant === 'white' ? (
+                        <span className={`text-2xl font-serif font-bold uppercase tracking-[0.3em] ${logoVariant === 'white' ? 'text-white' : 'text-black'}`}>
+                           Emanuel Ungaro
+                        </span>
+                     ) : (
+                        <img 
+                          src={
+                            logoVariant === 'img-pink' ? '/email-logos/ungaro-pink.png' :
+                            logoVariant === 'img-black' ? '/email-logos/ungaro-black.png' :
+                            '/email-logos/ungaro-white.png'
+                          } 
+                          alt="Brand Logo" 
+                          className="h-12 mx-auto object-contain" 
+                        />
+                     )}
+                  </div>
+
+                  <div className="border-t border-gray-50 p-10 text-center space-y-8">
+                     <div className="space-y-2">
+                       <p className="text-[10px] text-luxury-gold font-bold uppercase tracking-[0.4em]">
+                         {language === 'fr' ? 'Invitation Exclusive' : 'Exclusive Invitation'}
+                       </p>
+                       <h1 className="text-3xl font-cormorant text-luxury-dark leading-tight italic">
+                         {campaign.name}
+                       </h1>
+                     </div>
+
+                     <div 
+                        className="text-[13px] text-gray-600 leading-relaxed rich-text-preview text-left overflow-hidden"
+                        dangerouslySetInnerHTML={{ __html: customMessage || (language === 'fr' ? 'Votre message personnel s\'affichera ici...' : 'Your personal message will appear here...') }}
+                     />
+
+                     <div className="pt-8 pb-10 border-t border-gray-50">
+                        <div className="inline-block px-10 py-4 bg-luxury-dark text-white text-[10px] font-bold uppercase tracking-[0.3em] rounded-sm shadow-xl">
+                          {language === 'fr' ? 'Confirmer Présence' : 'Confirm Attendance'}
+                        </div>
+                        <p className="text-[9px] text-gray-400 mt-6 uppercase tracking-widest italic">
+                          {language === 'fr' ? 'RSVP personnel ci-joint' : 'Personal RSVP attached'}
+                        </p>
+                     </div>
+
+                     {emailImageUrl && (
+                       <div className="pt-8 border-t border-gray-50">
+                         <img src={emailImageUrl} alt="Decoration" className="w-full h-auto grayscale opacity-90 transition-all duration-700 hover:grayscale-0 hover:opacity-100" />
+                       </div>
+                     )}
+                  </div>
+               </div>
+               
+               <div className="mt-8 text-center text-[10px] text-gray-400 font-medium uppercase tracking-widest flex items-center justify-center gap-2">
+                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                 Production Mirror Protocol Active
+               </div>
+            </div>
+          )}
 
           {error && (
             <div className="p-4 bg-red-50 border border-red-100 text-red-600 text-[11px] font-medium rounded-sm uppercase tracking-wider">
