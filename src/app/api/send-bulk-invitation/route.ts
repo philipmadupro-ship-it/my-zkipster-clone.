@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const { campaignId, guestIds, subject, customMessage } = await req.json();
+    const { campaignId, guestIds, subject, customMessage, origin } = await req.json();
 
     // SMTP Diagnostic Check for Vercel
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
@@ -52,9 +52,8 @@ export async function POST(req: NextRequest) {
       failed: 0,
     };
 
-    const protocol = req.headers.get('x-forwarded-proto') || 'http';
-    const hostHeader = req.headers.get('host') || 'localhost:3000';
-    const host = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${hostHeader}`;
+    // Use the origin passed from the browser (most reliable), then env var, then headers
+    const host = origin || process.env.NEXT_PUBLIC_APP_URL || `${req.headers.get('x-forwarded-proto') || 'https'}://${req.headers.get('host') || 'localhost:3000'}`;
 
     // 3. Process guests strictly sequentially (as requested by user: 'not at the same time')
     for (const guestId of guestIds) {

@@ -60,6 +60,7 @@ export default function SendInvitationsModal({ campaignId, guests, onClose, onSe
             guestIds: chunks[i],
             subject,
             customMessage,
+            origin: window.location.origin,
           }),
         });
 
