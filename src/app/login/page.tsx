@@ -110,7 +110,8 @@ function LoginContent() {
 
       <div className="w-full max-w-lg relative animate-in fade-in zoom-in-95 duration-1000">
         <div className="text-center mb-12 space-y-3">
-          <h1 className="text-3xl sm:text-5xl font-bold text-white tracking-tight lowercase" style={{ fontFamily: "'Futura', 'Century Gothic', 'Arial Black', sans-serif" }}>emanuel ungaro</h1>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/ungaro-logo-white.png" alt="emanuel ungaro" className="h-10 sm:h-12 mx-auto" />
           <div className="flex items-center justify-center gap-4">
              <div className="h-px w-8 bg-white/20" />
              <p className="text-[10px] text-gray-500 uppercase tracking-[0.5em] font-bold">Secure Access</p>
@@ -219,7 +220,11 @@ function LoginContent() {
           )}
         </div>
         
-        <p className="text-center mt-12 text-[9px] text-gray-800 uppercase tracking-[0.5em] font-bold">EMANUEL UNGARO SECURE ACCESS</p>
+        <div className="text-center mt-12 space-y-2">
+          <p className="text-[9px] text-gray-800 uppercase tracking-[0.5em] font-bold">EMANUEL UNGARO SECURE ACCESS</p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/ungaro-logo-white.png" alt="emanuel ungaro" className="h-3 mx-auto opacity-20 grayscale" />
+        </div>
       </div>
     </div>
   );

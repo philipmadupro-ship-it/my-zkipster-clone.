@@ -57,7 +57,8 @@ export default function RSVPClient({ guest }: { guest: Guest }) {
       <div className="w-full max-w-xl relative animate-in fade-in zoom-in-95 duration-1000">
         <div className="text-center mb-16">
           <p className="text-[10px] text-gray-700 uppercase tracking-[0.4em] font-bold mb-4">Official Invitation</p>
-          <h1 className="text-3xl sm:text-5xl font-bold text-white tracking-tight lowercase mb-2" style={{ fontFamily: "'Futura', 'Century Gothic', 'Arial Black', sans-serif" }}>emanuel ungaro</h1>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/ungaro-logo-white.png" alt="emanuel ungaro" className="h-10 sm:h-12 mx-auto mb-2" />
           <div className="h-px w-12 bg-white/20 mx-auto" />
         </div>
 
@@ -171,7 +172,11 @@ export default function RSVPClient({ guest }: { guest: Guest }) {
           </div>
         </div>
         
-        <p className="text-center mt-12 text-[9px] text-gray-800 uppercase tracking-[0.5em] font-bold">EMANUEL UNGARO EVENT SYSTEM</p>
+        <div className="text-center mt-12 space-y-2">
+          <p className="text-[9px] text-gray-800 uppercase tracking-[0.5em] font-bold">EMANUEL UNGARO EVENT SYSTEM</p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/ungaro-logo-white.png" alt="emanuel ungaro" className="h-3 mx-auto opacity-20 grayscale" />
+        </div>
       </div>
     </div>
   );

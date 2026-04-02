@@ -68,9 +68,8 @@ export default function LuxuryRSVPClient({ guest, campaign }: { guest: Guest, ca
           
           {/* Header Branding */}
           <header className="mb-16 animate-fade-up delay-100">
-            <h1 className="font-cormorant text-4xl sm:text-5xl uppercase tracking-[0.2em] text-luxury-gold font-light">
-              Emanuel Ungaro
-            </h1>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/ungaro-logo-black.png" alt="emanuel ungaro" className="h-10 sm:h-12 mx-auto" />
           </header>
 
           {state === 'idle' && (
@@ -144,9 +143,8 @@ export default function LuxuryRSVPClient({ guest, campaign }: { guest: Guest, ca
         {/* Footer with Brand Logo */}
         <footer className="w-full border-t border-gray-100 py-10 px-12 text-center space-y-4 bg-white shrink-0">
           <p className="text-[9px] font-light uppercase tracking-[0.4em] text-gray-400">Event communications powered by</p>
-          <p className="text-[28px] sm:text-[34px] font-bold lowercase tracking-[-0.02em] text-black leading-none" style={{ fontFamily: "'Futura', 'Century Gothic', 'Arial Black', sans-serif" }}>
-            emanuel ungaro
-          </p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/ungaro-logo-black.png" alt="emanuel ungaro" className="h-8 mx-auto grayscale opacity-60" />
         </footer>
       </main>
     </div>
