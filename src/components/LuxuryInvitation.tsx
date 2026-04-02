@@ -20,8 +20,11 @@ interface Campaign {
   name: string;
   eventDate?: string;
   eventTime?: string;
+  eventEndTime?: string;
   eventVenue?: string;
   language?: 'en' | 'fr';
+  logoVariant?: string;
+  emailImageUrl?: string;
 }
 
 export default function LuxuryInvitation({ guest, campaign }: { guest: Guest | null, campaign: Campaign | null }) {
@@ -53,8 +56,25 @@ export default function LuxuryInvitation({ guest, campaign }: { guest: Guest | n
         <div className="p-12 sm:p-16 flex flex-col items-center text-center">
           
           {/* Header Branding */}
-          <header className="mb-16 animate-fade-up delay-100">
-            <UngaroLogo className="h-14 sm:h-16" color="#000000" />
+          <header className="mb-16 animate-fade-up delay-100 flex flex-col items-center">
+             {campaign?.logoVariant?.startsWith('img-') ? (
+              <img 
+                src={`/email-logos/ungaro-${campaign.logoVariant.replace('img-', '')}.png`} 
+                alt="Emanuel Ungaro" 
+                className="h-14 sm:h-16 w-auto"
+              />
+            ) : (
+              <UngaroLogo 
+                className="h-14 sm:h-16" 
+                color={campaign?.logoVariant === 'white' ? '#FFFFFF' : '#000000'} 
+              />
+            )}
+
+            {campaign?.emailImageUrl && (
+              <div className="mt-8 overflow-hidden rounded shadow-sm border border-gray-100 max-w-[400px]">
+                <img src={campaign.emailImageUrl} alt="Decoration" className="w-full h-auto" />
+              </div>
+            )}
           </header>
 
           {/* Greeting & Message */}
@@ -72,7 +92,7 @@ export default function LuxuryInvitation({ guest, campaign }: { guest: Guest | n
             <div className="flex flex-col sm:flex-row sm:gap-2">
               <span className="text-[11px] font-bold uppercase tracking-widest text-luxury-dark w-28 shrink-0">{t.dateTimeText}</span>
               <span className="text-[14px] text-luxury-dark">
-                {campaign?.eventDate || 'Date TBD'} {t.atText} {campaign?.eventTime || 'Time TBD'}.
+                {campaign?.eventDate || 'Date TBD'} {t.atText} {campaign?.eventTime || 'Time TBD'}{campaign?.eventEndTime ? ` - ${campaign.eventEndTime}` : ''}.
               </span>
             </div>
             <div className="flex flex-col sm:flex-row sm:gap-2">
@@ -120,9 +140,17 @@ export default function LuxuryInvitation({ guest, campaign }: { guest: Guest | n
             <span className="text-luxury-muted text-sm font-light">{t.toUnsub}</span>
           </div>
           
-          <div className="pt-4 space-y-3">
+          <div className="pt-4 space-y-3 flex flex-col items-center">
             <p className="text-[9px] uppercase tracking-[0.4em] text-gray-400 font-light">{t.poweredBy}</p>
-            <UngaroLogo className="h-10 opacity-70" color="#000000" />
+            {campaign?.logoVariant?.startsWith('img-') ? (
+              <img 
+                src={`/email-logos/ungaro-${campaign.logoVariant.replace('img-', '')}.png`} 
+                alt="Emanuel Ungaro" 
+                className="h-8 opacity-70"
+              />
+            ) : (
+              <UngaroLogo className="h-10 opacity-70" color={campaign?.logoVariant === 'white' ? '#FFFFFF' : '#000000'} />
+            )}
           </div>
         </footer>
       </main>

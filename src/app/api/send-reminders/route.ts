@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     let sentCount = 0;
     
     // Theme setup based on campaign
-    const isDark = campaign.logoVariant === 'white';
+    const isDark = campaign.logoVariant === 'white' || campaign.logoVariant === 'img-white';
     const bgColor = isDark ? '#050505' : '#ffffff';
     const textColor = isDark ? '#ffffff' : '#1a1a1a';
     const borderColor = isDark ? '#222222' : '#eeeeee';
@@ -76,6 +76,14 @@ export async function POST(req: NextRequest) {
        footerLogoHtml = `<img src="${host}/email-logos/ungaro-${variantName}.png" alt="Emanuel Ungaro" style="height: 40px; width: auto; max-width: 100%; border: 0;" />`;
     }
 
+    // Header Logo Logic (top of email)
+    let headerLogoHtml = `<h1 style="text-align: center; text-transform: uppercase; letter-spacing: 0.3em; color: ${logoColor}; font-weight: 300; margin-bottom: 40px;">EMANUEL UNGARO</h1>`;
+    const isImgVariantHeader = ['img-pink', 'img-black', 'img-white'].includes(campaign.logoVariant || '');
+    if (isImgVariantHeader) {
+       const variantNameH = (campaign.logoVariant || '').replace('img-', '');
+       headerLogoHtml = `<div style="text-align: center; margin-bottom: 40px;"><img src="${host}/email-logos/ungaro-${variantNameH}.png" alt="Emanuel Ungaro" style="height: 50px; width: auto; max-width: 80%; border: 0;" /></div>`;
+    }
+
     for (const guest of guests) {
       try {
         if (guest.status === 'pending' || guest.status === 'invited') {
@@ -88,8 +96,6 @@ export async function POST(req: NextRequest) {
             ? `<p style="font-size: 15px; margin-bottom: 40px;">Veuillez noter que notre événement approche. Si vous ne l'avez pas encore fait, veuillez confirmer votre présence au défilé <strong>${campaign.name}</strong> le plus tôt possible.</p>`
             : `<p style="font-size: 15px; margin-bottom: 40px;">Please note that our event is approaching. If you have not done so already, please confirm your attendance for the <strong>${campaign.name}</strong> runway show at your earliest convenience.</p>`;
 
-          // Render standard message or rich text message
-          // If they used a custom message, append the reminder prefix.
           let messageBody = defaultMessage;
           if (campaign.emailMessage) {
               messageBody = isFr 
@@ -100,7 +106,7 @@ export async function POST(req: NextRequest) {
           const htmlContent = `
             <div style="background-color: ${bgColor}; padding: 40px 10px;">
               <div style="background-color: ${bgColor}; font-family: 'Times New Roman', Times, serif; max-width: 600px; margin: 0 auto; padding: 40px; border: 1px solid ${borderColor}; color: ${textColor}; line-height: 1.6;">
-                <h1 style="text-align: center; text-transform: uppercase; letter-spacing: 0.3em; color: #8b7355; font-weight: 300; margin-bottom: 40px;">EMANUEL UNGARO</h1>
+                ${headerLogoHtml}
                 <p style="font-size: 16px; margin-bottom: 30px;">${greeting} ${guest.firstName || guest.name || ''},</p>
                 
                 <div style="margin-bottom: 40px;">
@@ -155,7 +161,7 @@ export async function POST(req: NextRequest) {
           const htmlContent = `
             <div style="background-color: ${bgColor}; padding: 40px 10px;">
               <div style="background-color: ${bgColor}; font-family: 'Times New Roman', Times, serif; max-width: 600px; margin: 0 auto; padding: 40px; border: 1px solid ${borderColor}; color: ${textColor}; line-height: 1.6;">
-                <h1 style="text-align: center; text-transform: uppercase; letter-spacing: 0.2em; color: #8b7355; font-weight: 300; margin-bottom: 40px; font-size: 20px;">${titleText}</h1>
+                ${headerLogoHtml}
                 <p style="font-size: 16px; margin-bottom: 20px;">${greeting} ${guest.name},</p>
                 <p style="font-size: 15px; margin-bottom: 30px;">${thankYouMsg}</p>
                 

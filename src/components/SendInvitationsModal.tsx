@@ -101,7 +101,7 @@ export default function SendInvitationsModal({ campaign, guests, onClose, onSent
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 text-left">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
-      <div className="relative w-full max-w-xl bg-white rounded-sm shadow-2xl overflow-hidden animate-fade-up">
+      <div className="relative w-full max-w-3xl bg-white rounded-sm shadow-2xl overflow-hidden animate-fade-up h-[90vh] flex flex-col mx-4 sm:mx-0">
         
         {/* Header */}
         <div className="p-8 border-b border-gray-100 flex items-center justify-between bg-luxury-off-white">
@@ -137,7 +137,7 @@ export default function SendInvitationsModal({ campaign, guests, onClose, onSent
           {view === 'edit' ? (
             <div className="space-y-10">
               {/* Section 1: Audience & Identity */}
-              <div className="grid grid-cols-2 gap-10">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-10">
                 <div className="space-y-4">
                   <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted">Target Audience</label>
                   <div className="flex flex-col gap-2">
@@ -308,26 +308,28 @@ export default function SendInvitationsModal({ campaign, guests, onClose, onSent
             </div>
           ) : (
             /* PREVIEW VIEW */
-            <div className="bg-gray-50 p-10 rounded-sm border border-gray-100 shadow-inner animate-in fade-in duration-500">
-               <div className="max-w-[450px] mx-auto bg-white shadow-2xl border border-gray-100 overflow-hidden">
-                  {/* Real-time Email Header */}
-                  <div className={`p-10 text-center ${logoVariant.includes('white') ? 'bg-black' : 'bg-white'}`}>
-                     {logoVariant === 'black' || logoVariant === 'white' ? (
-                        <span className={`text-2xl font-serif font-bold uppercase tracking-[0.3em] ${logoVariant === 'white' ? 'text-white' : 'text-black'}`}>
-                           Emanuel Ungaro
-                        </span>
-                     ) : (
-                        <img 
-                          src={
-                            logoVariant === 'img-pink' ? '/email-logos/ungaro-pink.png' :
-                            logoVariant === 'img-black' ? '/email-logos/ungaro-black.png' :
-                            '/email-logos/ungaro-white.png'
-                          } 
-                          alt="Brand Logo" 
-                          className="h-12 mx-auto object-contain" 
-                        />
-                     )}
-                  </div>
+            <div className="bg-gray-50 p-6 sm:p-10 rounded-sm border border-gray-100 shadow-inner animate-in fade-in duration-500 overflow-x-hidden">
+               <div className="max-w-[450px] mx-auto bg-white shadow-2xl border border-gray-100 overflow-hidden w-full">
+                  {/* Real-time Email Header - Smart Logic */}
+                  {(() => {
+                    const isDark = logoVariant === 'white' || logoVariant === 'img-white';
+                    const logoColor = isDark ? '#FFFFFF' : '#000000';
+                    return (
+                      <div className={`p-10 text-center ${isDark ? 'bg-black' : 'bg-white'}`}>
+                         {logoVariant === 'black' || logoVariant === 'white' ? (
+                            <span className={`text-2xl font-serif font-bold uppercase tracking-[0.3em] transition-all`} style={{ color: logoColor }}>
+                               Emanuel Ungaro
+                            </span>
+                         ) : (
+                            <img 
+                              src={`/email-logos/ungaro-${logoVariant.replace('img-', '')}.png`} 
+                              alt="Brand Logo" 
+                              className="h-12 mx-auto object-contain" 
+                            />
+                         )}
+                      </div>
+                    );
+                  })()}
 
                   <div className="border-t border-gray-50 p-10 text-center space-y-8">
                      <div className="space-y-2">

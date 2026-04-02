@@ -36,7 +36,11 @@ export default async function RSVPPage({ params }: Props) {
             name: campData.name,
             eventDate: campData.eventDate,
             eventTime: campData.eventTime,
+            eventEndTime: campData.eventEndTime || '',
             eventVenue: campData.eventVenue,
+            language: campData.language || 'en',
+            logoVariant: campData.logoVariant || 'black',
+            emailImageUrl: campData.emailImageUrl || '',
           };
         }
       }

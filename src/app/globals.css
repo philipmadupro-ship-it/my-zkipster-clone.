@@ -108,3 +108,56 @@ body {
 .delay-400 { animation-delay: 0.4s; }
 .delay-500 { animation-delay: 0.5s; }
 
+/* Quill Rich Text Editor - Force black text in dispatch modal (white bg context) */
+.ql-container.ql-snow {
+  border: none !important;
+  font-size: 14px;
+}
+.ql-editor {
+  color: #1a1a1a !important;
+  background: #ffffff !important;
+  min-height: 120px;
+  font-family: 'Times New Roman', Times, serif;
+  line-height: 1.6;
+}
+.ql-editor.ql-blank::before {
+  color: #999 !important;
+  font-style: italic;
+}
+.ql-toolbar.ql-snow {
+  border: none !important;
+  border-bottom: 1px solid #eee !important;
+  background: #fafaf8;
+}
+.ql-snow .ql-stroke {
+  stroke: #333 !important;
+}
+.ql-snow .ql-fill {
+  fill: #333 !important;
+}
+.ql-snow .ql-picker-label {
+  color: #333 !important;
+}
+
+/* Rich text preview in dispatch modal */
+.rich-text-preview p { margin-bottom: 0.75em; }
+.rich-text-preview h1 { font-size: 1.5em; font-weight: bold; margin-bottom: 0.5em; }
+.rich-text-preview h2 { font-size: 1.25em; font-weight: bold; margin-bottom: 0.5em; }
+.rich-text-preview h3 { font-size: 1.1em; font-weight: bold; margin-bottom: 0.5em; }
+.rich-text-preview a { color: #8b7355; text-decoration: underline; }
+.rich-text-preview ul, .rich-text-preview ol { padding-left: 1.5em; margin-bottom: 0.75em; }
+.rich-text-preview strong { font-weight: bold; }
+.rich-text-preview em { font-style: italic; }
+
+/* Dispatch Modal - Responsive Sizing */
+@media (max-width: 640px) {
+  .fixed.inset-0 .animate-fade-up.max-w-3xl {
+    max-width: 100% !important;
+    width: 100% !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+}
+

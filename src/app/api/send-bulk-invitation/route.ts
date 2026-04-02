@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
 
         const rsvpLink = `${host}/rsvp/${guestId}`;
         
-        const isDark = campaign.logoVariant === 'white';
+        const isDark = campaign.logoVariant === 'white' || campaign.logoVariant === 'img-white';
         const bgColor = isDark ? '#050505' : '#ffffff';
         const textColor = isDark ? '#ffffff' : '#1a1a1a';
         const borderColor = isDark ? '#222222' : '#eeeeee';
@@ -93,6 +93,14 @@ export async function POST(req: NextRequest) {
              </div>` 
           : '';
 
+        // Header Logo Logic (top of email)
+        let headerLogoHtml = `<h1 style="text-align: center; text-transform: uppercase; letter-spacing: 0.3em; color: ${logoColor}; font-weight: 300; margin-bottom: 40px;">EMANUEL UNGARO</h1>`;
+        const isImgVariantHeader = ['img-pink', 'img-black', 'img-white'].includes(campaign.logoVariant || '');
+        if (isImgVariantHeader) {
+           const variantNameH = (campaign.logoVariant || '').replace('img-', '');
+           headerLogoHtml = `<div style="text-align: center; margin-bottom: 40px;"><img src="${host}/email-logos/ungaro-${variantNameH}.png" alt="Emanuel Ungaro" style="height: 50px; width: auto; max-width: 80%; border: 0;" /></div>`;
+        }
+
         // Footer Logo Logic
         let footerLogoHtml = `<p style="font-family: 'Futura', 'Century Gothic', 'Arial Black', sans-serif; font-size: 28px; color: ${logoColor}; font-weight: bold; text-transform: lowercase; letter-spacing: -0.02em; margin: 0; line-height: 1;">emanuel ungaro</p>`;
         const isImgVariant = ['img-pink', 'img-black', 'img-white'].includes(campaign.logoVariant || '');
@@ -104,7 +112,7 @@ export async function POST(req: NextRequest) {
         const htmlContent = `
           <div style="background-color: ${bgColor}; padding: 40px 10px;">
             <div style="background-color: ${bgColor}; font-family: 'Times New Roman', Times, serif; max-width: 600px; margin: 0 auto; padding: 40px; border: 1px solid ${borderColor}; color: ${textColor}; line-height: 1.6;">
-              <h1 style="text-align: center; text-transform: uppercase; letter-spacing: 0.3em; color: #8b7355; font-weight: 300; margin-bottom: 40px;">EMANUEL UNGARO</h1>
+              ${headerLogoHtml}
               <p style="font-size: 16px; margin-bottom: 30px;">${greeting} ${guest.firstName || guest.name || ''},</p>
               
               <div style="margin-bottom: 40px;">

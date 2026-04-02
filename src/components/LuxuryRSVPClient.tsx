@@ -19,8 +19,11 @@ interface Campaign {
   name: string;
   eventDate?: string;
   eventTime?: string;
+  eventEndTime?: string;
   eventVenue?: string;
   language?: 'en' | 'fr';
+  logoVariant?: string;
+  emailImageUrl?: string;
 }
 
 export default function LuxuryRSVPClient({ guest, campaign }: { guest: Guest, campaign: Campaign | null }) {
@@ -88,8 +91,25 @@ export default function LuxuryRSVPClient({ guest, campaign }: { guest: Guest, ca
         <div className="p-12 sm:p-16 flex flex-col items-center text-center">
           
           {/* Header Branding */}
-          <header className="mb-16 animate-fade-up delay-100">
-            <UngaroLogo className="h-14 sm:h-16" color="#000000" />
+          <header className="mb-16 animate-fade-up delay-100 flex flex-col items-center">
+            {campaign?.logoVariant?.startsWith('img-') ? (
+              <img 
+                src={`/email-logos/ungaro-${campaign.logoVariant.replace('img-', '')}.png`} 
+                alt="Emanuel Ungaro" 
+                className="h-14 sm:h-16 w-auto"
+              />
+            ) : (
+              <UngaroLogo 
+                className="h-14 sm:h-16" 
+                color={campaign?.logoVariant === 'white' ? '#FFFFFF' : '#000000'} 
+              />
+            )}
+            
+            {campaign?.emailImageUrl && (
+              <div className="mt-8 overflow-hidden rounded shadow-sm border border-gray-100 max-w-[400px]">
+                <img src={campaign.emailImageUrl} alt="Decoration" className="w-full h-auto" />
+              </div>
+            )}
           </header>
 
           {state === 'idle' && (
@@ -159,9 +179,17 @@ export default function LuxuryRSVPClient({ guest, campaign }: { guest: Guest, ca
         </div>
         
         {/* Footer with Brand Logo */}
-        <footer className="w-full border-t border-gray-100 py-10 px-12 text-center space-y-4 bg-white shrink-0">
+        <footer className="w-full border-t border-gray-100 py-10 px-12 text-center space-y-4 bg-white shrink-0 flex flex-col items-center">
           <p className="text-[9px] font-light uppercase tracking-[0.4em] text-gray-400">{t.poweredBy}</p>
-          <UngaroLogo className="h-10 opacity-70" color="#000000" />
+          {campaign?.logoVariant?.startsWith('img-') ? (
+            <img 
+              src={`/email-logos/ungaro-${campaign.logoVariant.replace('img-', '')}.png`} 
+              alt="Emanuel Ungaro" 
+              className="h-8 opacity-70"
+            />
+          ) : (
+            <UngaroLogo className="h-10 opacity-70" color={campaign?.logoVariant === 'white' ? '#FFFFFF' : '#000000'} />
+          )}
         </footer>
       </main>
     </div>

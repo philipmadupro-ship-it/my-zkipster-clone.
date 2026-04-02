@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
         color: { dark: '#1a1a1a', light: '#ffffff' },
       });
 
-      const isDark = campaign.logoVariant === 'white';
+      const isDark = campaign.logoVariant === 'white' || campaign.logoVariant === 'img-white';
       const bgColor = isDark ? '#050505' : '#ffffff';
       const textColor = isDark ? '#ffffff' : '#1a1a1a';
       const borderColor = isDark ? '#222222' : '#eeeeee';
@@ -100,10 +100,18 @@ export async function POST(req: NextRequest) {
          footerLogoHtml = `<img src="${host}/email-logos/ungaro-${variantName}.png" alt="Emanuel Ungaro" style="height: 40px; width: auto; max-width: 100%; border: 0;" />`;
       }
 
+      // Header Logo Logic (top of email)
+      let headerLogoHtml = `<h1 style="text-align: center; text-transform: uppercase; letter-spacing: 0.3em; color: ${logoColor}; font-weight: 300; margin-bottom: 40px;">${titleText}</h1>`;
+      const isImgVariantHeader = ['img-pink', 'img-black', 'img-white'].includes(campaign.logoVariant || '');
+      if (isImgVariantHeader) {
+         const variantNameH = (campaign.logoVariant || '').replace('img-', '');
+         headerLogoHtml = `<div style="text-align: center; margin-bottom: 40px;"><img src="${host}/email-logos/ungaro-${variantNameH}.png" alt="Emanuel Ungaro" style="height: 50px; width: auto; max-width: 80%; border: 0;" /><p style="text-align: center; text-transform: uppercase; letter-spacing: 0.3em; color: #8b7355; font-weight: 300; margin-top: 20px; font-size: 16px;">${titleText}</p></div>`;
+      }
+
       const emailHtml = `
         <div style="background-color: ${bgColor}; padding: 40px 10px;">
           <div style="background-color: ${bgColor}; font-family: 'Times New Roman', Times, serif; max-width: 600px; margin: 0 auto; padding: 40px; border: 1px solid ${borderColor}; color: ${textColor}; line-height: 1.6;">
-            <h1 style="text-align: center; text-transform: uppercase; letter-spacing: 0.3em; color: #8b7355; font-weight: 300; margin-bottom: 40px;">${titleText}</h1>
+            ${headerLogoHtml}
             <p style="font-size: 16px; margin-bottom: 20px;">${greeting} ${name.trim()},</p>
             <p style="font-size: 15px; margin-bottom: 40px;">${thankYouMsg}</p>
             
