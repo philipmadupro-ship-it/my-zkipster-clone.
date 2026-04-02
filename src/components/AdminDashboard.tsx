@@ -234,7 +234,11 @@ function AdminDashboardContent() {
         ownerEmail: data.ownerEmail,
         eventDate: data.eventDate,
         eventTime: data.eventTime,
-        eventVenue: data.eventVenue
+        eventVenue: data.eventVenue,
+        language: data.language || 'en',
+        logoVariant: data.logoVariant || 'black',
+        emailImageUrl: data.emailImageUrl || '',
+        emailMessage: data.emailMessage || ''
       });
       showToast('Campaign created!', 'success');
     } catch (err) {
@@ -421,52 +425,29 @@ function AdminDashboardContent() {
                   type="text"
                   placeholder="Event Date (e.g. Tuesday, 3 March)"
                   value={newEventDate}
-                  onChange={(e) => setNewEventDate(e.target.value)}
-                  className="w-full bg-gray-950 border border-gray-800 rounded-lg text-[10px] py-2 px-3 outline-none focus:border-violet-600 transition"
-                />
-                <input
-                  type="text"
-                  placeholder="Event Time (e.g. 9h30 AM)"
-                  value={newEventTime}
-                  onChange={(e) => setNewEventTime(e.target.value)}
                   className="w-full bg-gray-950 border border-gray-800 rounded-lg text-[10px] py-2 px-3 outline-none focus:border-violet-600 transition"
                 />
                 <div className="flex gap-2">
-                  <select
-                    value={newCampaignLanguage}
-                    onChange={(e) => setNewCampaignLanguage(e.target.value as 'en'|'fr')}
-                    className="w-1/2 bg-gray-950 border border-gray-800 rounded-lg text-[10px] py-2 px-3 outline-none focus:border-violet-600 transition uppercase"
-                  >
-                    <option value="en">English Email</option>
-                    <option value="fr">French Email</option>
-                  </select>
-                  <select
-                    value={newCampaignLogoVariant}
-                    onChange={(e) => setNewCampaignLogoVariant(e.target.value as 'black'|'white'|'img-pink'|'img-black'|'img-white')}
-                    className="w-1/2 bg-gray-950 border border-gray-800 rounded-lg text-[10px] py-2 px-3 outline-none focus:border-violet-600 transition uppercase"
-                  >
-                    <option value="black">Classic Text (Black)</option>
-                    <option value="white">Classic Text (White)</option>
-                    <option value="img-pink">Official Image (Pink)</option>
-                    <option value="img-black">Official Image (Black)</option>
-                    <option value="img-white">Official Image (White)</option>
-                  </select>
+                  <input
+                    type="date"
+                    value={newEventDate}
+                    onChange={(e) => setNewEventDate(e.target.value)}
+                    className="w-1/2 bg-gray-950 border border-gray-800 rounded-lg text-[10px] py-2 px-3 outline-none focus:border-violet-600 transition"
+                  />
+                  <input
+                    type="time"
+                    value={newEventTime}
+                    onChange={(e) => setNewEventTime(e.target.value)}
+                    className="w-1/2 bg-gray-950 border border-gray-800 rounded-lg text-[10px] py-2 px-3 outline-none focus:border-violet-600 transition"
+                  />
                 </div>
                 <input
                   type="text"
-                  placeholder="Bottom Decoration Image URL (Optional)"
-                  value={newCampaignEmailImage}
-                  onChange={(e) => setNewCampaignEmailImage(e.target.value)}
+                  placeholder="VENUE LOCATION"
+                  value={newEventVenue}
+                  onChange={(e) => setNewEventVenue(e.target.value)}
                   className="w-full bg-gray-950 border border-gray-800 rounded-lg text-[10px] py-2 px-3 outline-none focus:border-violet-600 transition"
                 />
-                <div className="rounded-lg overflow-hidden border border-gray-800 bg-gray-950 text-white leading-normal">
-                  <RichTextEditor
-                    value={newCampaignMessage}
-                    onChange={setNewCampaignMessage}
-                    placeholder="Write your email securely here... (bold, italic, etc)"
-                    className="min-h-[100px] text-white"
-                  />
-                </div>
                 <button 
                   type="submit" 
                   disabled={isCreatingCampaign || !newCampaignName.trim()}
@@ -795,7 +776,7 @@ function AdminDashboardContent() {
 
       {showEmailModal && selectedCampaign && (
         <SendInvitationsModal
-          campaignId={selectedCampaign.id}
+          campaign={selectedCampaign}
           guests={guests}
           onSent={(success, failed) => {
             if (failed > 0) {

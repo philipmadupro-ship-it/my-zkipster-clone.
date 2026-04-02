@@ -1,26 +1,31 @@
-'use client';
-
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { db } from '@/lib/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 import { type GuestData } from './AddGuestModal';
+import { type CampaignData } from './AdminDashboard';
+import RichTextEditor from './RichTextEditor';
 
 interface Props {
-  campaignId: string;
+  campaign: CampaignData;
   guests: GuestData[];
   onClose: () => void;
   onSent: (success: number, failed: number) => void;
 }
 
-export default function SendInvitationsModal({ campaignId, guests, onClose, onSent }: Props) {
-  const [subject, setSubject] = useState('Exclusive Invitation: Emanuel Ungaro FW26');
-  const [customMessage, setCustomMessage] = useState(
-    'It is our distinct pleasure to invite you to the Emanuel Ungaro Fall/Winter 26 Runway Show. Please find your personal digital invitation and access pass below.'
-  );
+export default function SendInvitationsModal({ campaign, guests, onClose, onSent }: Props) {
+  const [subject, setSubject] = useState(campaign.name ? `Exclusive Invitation: ${campaign.name}` : 'Exclusive Invitation: Emanuel Ungaro FW26');
+  const [customMessage, setCustomMessage] = useState(campaign.emailMessage || '');
+  const [language, setLanguage] = useState<'en' | 'fr'>(campaign.language || 'en');
+  const [logoVariant, setLogoVariant] = useState(campaign.logoVariant || 'black');
+  const [emailImageUrl, setEmailImageUrl] = useState(campaign.emailImageUrl || '');
+  
   const [target, setTarget] = useState<'all' | 'uninvited'>('uninvited');
   const [sending, setSending] = useState(false);
   const [currentBatch, setCurrentBatch] = useState(0);
   const [totalBatches, setTotalBatches] = useState(0);
   const [sentCount, setSentCount] = useState(0);
   const [error, setError] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
 
   const targetGuests = target === 'all' 
     ? guests 
@@ -36,19 +41,29 @@ export default function SendInvitationsModal({ campaignId, guests, onClose, onSe
     setError('');
     setSentCount(0);
     
-    const BATCH_SIZE = 100;
-    const guestIds = targetGuests.map(g => g.id);
-    const chunks: string[][] = [];
-    
-    for (let i = 0; i < guestIds.length; i += BATCH_SIZE) {
-      chunks.push(guestIds.slice(i, i + BATCH_SIZE));
-    }
-    
-    setTotalBatches(chunks.length);
-    let totalSuccess = 0;
-    let totalFailed = 0;
-
     try {
+      // 1. Sync branding settings to Firestore Campaign doc first
+      const campRef = doc(db, 'campaigns', campaign.id);
+      await updateDoc(campRef, {
+        language,
+        logoVariant,
+        emailImageUrl,
+        emailMessage: customMessage
+      });
+
+      // 2. Batch dispatch
+      const BATCH_SIZE = 100;
+      const guestIds = targetGuests.map(g => g.id);
+      const chunks: string[][] = [];
+      
+      for (let i = 0; i < guestIds.length; i += BATCH_SIZE) {
+        chunks.push(guestIds.slice(i, i + BATCH_SIZE));
+      }
+      
+      setTotalBatches(chunks.length);
+      let totalSuccess = 0;
+      let totalFailed = 0;
+
       for (let i = 0; i < chunks.length; i++) {
         setCurrentBatch(i + 1);
         
@@ -56,7 +71,7 @@ export default function SendInvitationsModal({ campaignId, guests, onClose, onSe
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            campaignId,
+            campaignId: campaign.id,
             guestIds: chunks[i],
             subject,
             customMessage,
@@ -96,67 +111,155 @@ export default function SendInvitationsModal({ campaignId, guests, onClose, onSe
           <button onClick={onClose} className="text-luxury-muted hover:text-luxury-dark transition-colors text-xl font-light">✕</button>
         </div>
 
-        <div className="p-10 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+        <div className="p-10 space-y-10 max-h-[75vh] overflow-y-auto custom-scrollbar">
           
-          {/* Target Selection */}
-          <div className="space-y-4">
-            <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted">Target Audience</label>
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                onClick={() => setTarget('uninvited')}
-                className={`py-4 px-6 rounded-sm border text-[11px] font-bold uppercase tracking-widest transition-all duration-500 ${
-                  target === 'uninvited' 
-                    ? 'bg-luxury-dark text-white border-luxury-dark' 
-                    : 'bg-white text-luxury-muted border-gray-100 hover:border-gray-300'
-                }`}
-              >
-                Pending Only ({guests.filter(g => g.status === 'pending' || g.status === 'invited').length})
-              </button>
-              <button
-                onClick={() => setTarget('all')}
-                className={`py-4 px-6 rounded-sm border text-[11px] font-bold uppercase tracking-widest transition-all duration-500 ${
-                  target === 'all' 
-                    ? 'bg-luxury-dark text-white border-luxury-dark' 
-                    : 'bg-white text-luxury-muted border-gray-100 hover:border-gray-300'
-                }`}
-              >
-                All Guests ({guests.length})
-              </button>
+          {/* Section 1: Audience & Identity */}
+          <div className="grid grid-cols-2 gap-10">
+            <div className="space-y-4">
+              <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted">Target Audience</label>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => setTarget('uninvited')}
+                  className={`py-3 px-4 rounded-sm border text-[10px] font-bold uppercase tracking-widest transition-all duration-300 ${
+                    target === 'uninvited' 
+                      ? 'bg-luxury-dark text-white border-luxury-dark shadow-lg' 
+                      : 'bg-white text-luxury-muted border-gray-100 hover:border-gray-300'
+                  }`}
+                >
+                  Pending Only ({guests.filter(g => g.status === 'pending' || g.status === 'invited').length})
+                </button>
+                <button
+                  onClick={() => setTarget('all')}
+                  className={`py-3 px-4 rounded-sm border text-[10px] font-bold uppercase tracking-widest transition-all duration-300 ${
+                    target === 'all' 
+                      ? 'bg-luxury-dark text-white border-luxury-dark shadow-lg' 
+                      : 'bg-white text-luxury-muted border-gray-100 hover:border-gray-300'
+                  }`}
+                >
+                  All Guests ({guests.length})
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted">Campaign Language</label>
+              <div className="flex gap-2">
+                {(['en', 'fr'] as const).map((l) => (
+                  <button
+                    key={l}
+                    onClick={() => setLanguage(l)}
+                    className={`flex-1 py-3 border rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all duration-300 ${
+                      language === l
+                        ? 'bg-luxury-gold text-white border-luxury-gold shadow-md'
+                        : 'bg-white text-luxury-muted border-gray-100 hover:border-gray-200'
+                    }`}
+                  >
+                    {l === 'en' ? 'English' : 'Français'}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Subject */}
-          <div className="space-y-3">
-            <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted ml-0.5 text-left block">Email Subject</label>
-            <input
-              type="text"
-              value={subject}
-              onChange={e => setSubject(e.target.value)}
-              className="w-full bg-transparent border-b border-gray-200 py-3 text-sm text-luxury-dark outline-none focus:border-luxury-gold transition-all duration-500 placeholder:text-gray-300"
-            />
+          <hr className="border-gray-50" />
+
+          {/* Section 2: Logo Selection */}
+          <div className="space-y-4">
+            <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted block">Visual Branding (Logo Selection)</label>
+            <div className="grid grid-cols-5 gap-3">
+              {[
+                { id: 'black', label: 'Text Black', preview: 'EU' },
+                { id: 'white', label: 'Text White', preview: 'EU', bg: 'bg-black' },
+                { id: 'img-pink', label: 'Official Pink', src: '/email-logos/ungaro-pink.png' },
+                { id: 'img-black', label: 'Official Black', src: '/email-logos/ungaro-black.png' },
+                { id: 'img-white', label: 'Official White', src: '/email-logos/ungaro-white.png', bg: 'bg-black' }
+              ].map((variant) => (
+                <button
+                  key={variant.id}
+                  onClick={() => setLogoVariant(variant.id as any)}
+                  className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all duration-300 flex flex-col items-center justify-center gap-1 ${
+                    variant.bg || 'bg-gray-50'
+                  } ${
+                    logoVariant === variant.id 
+                      ? 'border-luxury-gold ring-4 ring-luxury-gold/10' 
+                      : 'border-transparent hover:border-gray-200'
+                  }`}
+                >
+                  {variant.src ? (
+                    <img src={variant.src} alt={variant.label} className="w-12 h-auto object-contain" />
+                  ) : (
+                    <span className={`text-xl font-serif font-bold ${variant.id === 'white' ? 'text-white' : 'text-black'}`}>{variant.preview}</span>
+                  )}
+                  <span className={`text-[7px] uppercase tracking-tighter ${variant.id.includes('white') ? 'text-gray-400' : 'text-gray-500'}`}>{variant.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Custom Message */}
-          <div className="space-y-3">
-            <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted ml-0.5 text-left block">Personalized Narrative</label>
-            <textarea
-              value={customMessage}
-              onChange={e => setCustomMessage(e.target.value)}
-              rows={4}
-              className="w-full bg-transparent border border-gray-100 p-4 text-sm text-luxury-dark outline-none focus:border-luxury-gold transition-all duration-500 placeholder:text-gray-300 leading-relaxed rounded-sm"
-              placeholder="Enter your custom invitation message..."
-            />
+          {/* Section 3: Subject & Narrative */}
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted">Couture Subject Line</label>
+              <input
+                type="text"
+                value={subject}
+                onChange={e => setSubject(e.target.value)}
+                className="w-full bg-transparent border-b border-gray-100 py-3 text-sm text-luxury-dark outline-none focus:border-luxury-gold transition-all duration-500 font-medium"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted">Personalized Narrative (Rich Text)</label>
+              <div className="border border-gray-100 rounded-sm overflow-hidden bg-gray-50/30">
+                <RichTextEditor
+                  value={customMessage}
+                  onChange={setCustomMessage}
+                  placeholder="Draft your exquisite invitation message..."
+                />
+              </div>
+            </div>
           </div>
 
-          {/* Link Preview */}
-          <div className="bg-luxury-off-white/50 p-6 rounded-sm border border-gray-50 flex items-start gap-4">
-             <div className="w-8 h-8 rounded-full bg-luxury-gold/10 flex items-center justify-center text-luxury-gold shrink-0">
-               <span className="text-xs">🔗</span>
-             </div>
-             <div className="space-y-1">
-               <p className="text-[10px] font-bold text-luxury-dark uppercase tracking-widest">Digital Link Inclusion</p>
-               <p className="text-[10px] text-luxury-muted italic">Each guest will receive their unique [Personal RSVP Link] automatically at the end of the message.</p>
-             </div>
+          {/* Section 4: Decoration Image (Drag & Drop) */}
+          <div className="space-y-4">
+            <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted">Decoration Image (Drag & Drop)</label>
+            <div 
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDragging(false);
+                const text = e.dataTransfer.getData('text');
+                if (text && text.startsWith('http')) setEmailImageUrl(text);
+              }}
+              className={`border-2 border-dashed rounded-xl p-8 transition-all duration-500 flex flex-col items-center justify-center text-center gap-3 relative overflow-hidden ${
+                isDragging 
+                  ? 'border-luxury-gold bg-luxury-gold/5 scale-[1.02]' 
+                  : emailImageUrl 
+                    ? 'border-emerald-500/20 bg-emerald-500/5' 
+                    : 'border-gray-100 hover:border-gray-300 bg-gray-50/50'
+              }`}
+            >
+              {emailImageUrl ? (
+                <>
+                  <img src={emailImageUrl} alt="Decoration Preview" className="h-20 w-auto object-cover rounded shadow-sm mb-2" />
+                  <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest">Image Mounted</p>
+                  <button onClick={() => setEmailImageUrl('')} className="text-[9px] text-gray-400 hover:text-red-500 underline uppercase tracking-tighter">Remove</button>
+                </>
+              ) : (
+                <>
+                  <div className="text-3xl grayscale opacity-20">🖼️</div>
+                  <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Drop Image URL here</p>
+                  <input 
+                    type="text" 
+                    placeholder="or paste URL"
+                    value={emailImageUrl}
+                    onChange={(e) => setEmailImageUrl(e.target.value)}
+                    className="mt-2 w-full max-w-[200px] bg-white border border-gray-200 rounded px-3 py-1.5 text-[9px] text-center outline-none focus:border-luxury-gold transition-all"
+                  />
+                </>
+              )}
+            </div>
           </div>
 
           {error && (
