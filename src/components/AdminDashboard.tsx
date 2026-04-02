@@ -31,7 +31,7 @@ export interface CampaignData {
   eventVenue?: string;
   language?: 'en' | 'fr';
   emailImageUrl?: string;
-  logoVariant?: 'black' | 'white';
+  logoVariant?: 'black' | 'white' | 'img-pink' | 'img-black' | 'img-white';
   emailMessage?: string;
   createdAt?: any;
 }
@@ -56,7 +56,7 @@ export default function AdminDashboard() {
   const [newEventTime, setNewEventTime] = useState('');
   const [newEventVenue, setNewEventVenue] = useState('');
   const [newCampaignLanguage, setNewCampaignLanguage] = useState<'en'|'fr'>('en');
-  const [newCampaignLogoVariant, setNewCampaignLogoVariant] = useState<'black'|'white'>('black');
+  const [newCampaignLogoVariant, setNewCampaignLogoVariant] = useState<'black'|'white'|'img-pink'|'img-black'|'img-white'>('black');
   const [newCampaignEmailImage, setNewCampaignEmailImage] = useState('');
   const [newCampaignMessage, setNewCampaignMessage] = useState('');
   const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
@@ -408,11 +408,14 @@ export default function AdminDashboard() {
                   </select>
                   <select
                     value={newCampaignLogoVariant}
-                    onChange={(e) => setNewCampaignLogoVariant(e.target.value as 'black'|'white')}
+                    onChange={(e) => setNewCampaignLogoVariant(e.target.value as 'black'|'white'|'img-pink'|'img-black'|'img-white')}
                     className="w-1/2 bg-gray-950 border border-gray-800 rounded-lg text-[10px] py-2 px-3 outline-none focus:border-violet-600 transition uppercase"
                   >
-                    <option value="black">Black Logo</option>
-                    <option value="white">White Logo</option>
+                    <option value="black">Classic Text (Black)</option>
+                    <option value="white">Classic Text (White)</option>
+                    <option value="img-pink">Official Image (Pink)</option>
+                    <option value="img-black">Official Image (Black)</option>
+                    <option value="img-white">Official Image (White)</option>
                   </select>
                 </div>
                 <input

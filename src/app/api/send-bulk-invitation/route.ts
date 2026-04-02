@@ -93,6 +93,14 @@ export async function POST(req: NextRequest) {
              </div>` 
           : '';
 
+        // Footer Logo Logic
+        let footerLogoHtml = `<p style="font-family: 'Futura', 'Century Gothic', 'Arial Black', sans-serif; font-size: 28px; color: ${logoColor}; font-weight: bold; text-transform: lowercase; letter-spacing: -0.02em; margin: 0; line-height: 1;">emanuel ungaro</p>`;
+        const isImgVariant = ['img-pink', 'img-black', 'img-white'].includes(campaign.logoVariant || '');
+        if (isImgVariant) {
+           const variantName = (campaign.logoVariant || '').replace('img-', '');
+           footerLogoHtml = `<img src="${host}/email-logos/ungaro-${variantName}.png" alt="Emanuel Ungaro" style="height: 40px; width: auto; max-width: 100%; border: 0;" />`;
+        }
+
         const htmlContent = `
           <div style="background-color: ${bgColor}; padding: 40px 10px;">
             <div style="background-color: ${bgColor}; font-family: 'Times New Roman', Times, serif; max-width: 600px; margin: 0 auto; padding: 40px; border: 1px solid ${borderColor}; color: ${textColor}; line-height: 1.6;">
@@ -110,9 +118,10 @@ export async function POST(req: NextRequest) {
               ${decorativeImageHtml}
 
               <div style="border-top: 1px solid ${borderColor}; padding-top: 30px; margin-top: 50px; text-align: center;">
-                <p style="font-size: 9px; color: #999; text-transform: uppercase; letter-spacing: 0.4em; margin-bottom: 15px;">${poweredByText}</p>
-                <p style="font-family: 'Futura', 'Century Gothic', 'Arial Black', sans-serif; font-size: 28px; color: ${logoColor}; font-weight: bold; text-transform: lowercase; letter-spacing: -0.02em; margin: 0; line-height: 1;">emanuel ungaro</p>
+                <p style="font-size: 9px; color: #999; text-transform: uppercase; letter-spacing: 0.4em; margin-bottom: 25px;">${poweredByText}</p>
+                ${footerLogoHtml}
               </div>
+
             </div>
           </div>
         `;
