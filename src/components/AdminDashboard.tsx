@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, Component } from 'react';
 import { useRouter } from 'next/navigation';
 import UngaroLogo from './UngaroLogo';
 import { signOut } from 'firebase/auth';
@@ -18,6 +18,34 @@ const ArrivalAnalytics = dynamic(() => import('./ArrivalAnalytics'), { ssr: fals
 const QRScanner = dynamic(() => import('./QRScanner'), { ssr: false });
 const SendInvitationsModal = dynamic(() => import('./SendInvitationsModal'), { ssr: false });
 const EditGuestModal = dynamic(() => import('./EditGuestModal'), { ssr: false });
+
+// Diagnostic Error Boundary
+class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean; error: any }> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error("[CRITICAL ERROR]", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-black flex items-center justify-center p-10 text-center">
+          <div className="max-w-md">
+            <h1 className="text-2xl font-bold text-red-500 mb-4">Diagnostics: Critical Error</h1>
+            <p className="text-gray-400 text-sm mb-6">Something went wrong while rendering the dashboard. Error code: {String(this.state.error?.message || this.state.error)}</p>
+            <button onClick={() => window.location.reload()} className="bg-white text-black px-6 py-2 rounded-lg font-bold">Reload Application</button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export interface CampaignData {
   id: string;
@@ -44,6 +72,14 @@ const STATUS_BADGE: Record<string, { label: string; className: string }> = {
 };
 
 export default function AdminDashboard() {
+  return (
+    <ErrorBoundary>
+      <AdminDashboardContent />
+    </ErrorBoundary>
+  );
+}
+
+function AdminDashboardContent() {
   const { user, loading } = useAuth();
   const router = useRouter();
   
