@@ -9,6 +9,8 @@ interface ParsedRow {
   lastName: string;
   email?: string;
   category?: string;
+  portraitUrl?: string;
+  parentId?: string;
   [key: string]: string | undefined;
 }
 
@@ -16,10 +18,6 @@ interface Props {
   campaignId: string;
   onImported: (guests: GuestData[]) => void;
   onClose: () => void;
-}
-
-function findColumnIdx(headers: string[], keywords: string[]): number {
-  return headers.findIndex(h => keywords.some(kw => h.toLowerCase().includes(kw)));
 }
 
 export default function ImportGuestsModal({ campaignId, onImported, onClose }: Props) {
@@ -31,6 +29,10 @@ export default function ImportGuestsModal({ campaignId, onImported, onClose }: P
   const [done, setDone] = useState<{ created: number; errors: number } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  /**
+   * Universal file handler for .csv, .xlsx, and .xls
+   * Uses 'xlsx' library for robust parsing and a heuristic-based column mapper.
+   */
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -40,124 +42,111 @@ export default function ImportGuestsModal({ campaignId, onImported, onClose }: P
     setDone(null);
 
     const ext = file.name.split('.').pop()?.toLowerCase();
-    let parsed: ParsedRow[] = [];
-    let detectedHeaders: string[] = [];
-
-    if (ext === 'csv') {
-      const text = await file.text();
-      const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
-      if (lines.length < 2) { setError('CSV must have at least a header row and one data row.'); return; }
-
-      const splitLine = (line: string) => line.split(/[,;]/).map(c => c.trim().replace(/^"|"$/g, ''));
-      detectedHeaders = splitLine(lines[0]);
-
-      const firstIdx = findColumnIdx(detectedHeaders, ['first', 'prénom', 'prenom']);
-      const lastIdx = findColumnIdx(detectedHeaders, ['last', 'nom']);
-      const nameIdx = findColumnIdx(detectedHeaders, ['name', 'fullname']);
-      const emailIdx = findColumnIdx(detectedHeaders, ['email', 'mail']);
-      const categoryIdx = findColumnIdx(detectedHeaders, ['category', 'vip', 'type', 'status']);
-      const portraitIdx = findColumnIdx(detectedHeaders, ['portrait', 'image', 'photo']);
-      const parentIdx = findColumnIdx(detectedHeaders, ['parent', 'plusone', 'plus-one', 'principal']);
-
-      if (firstIdx === -1 && lastIdx === -1 && nameIdx === -1) {
-        setError('Could not find Name columns. Please ensure you have "First Name" and "Last Name" columns.');
-        return;
-      }
-
-      for (let i = 1; i < lines.length; i++) {
-        const cols = splitLine(lines[i]);
-        let first = '', last = '';
-
-        if (firstIdx !== -1) first = cols[firstIdx] || '';
-        if (lastIdx !== -1) last = cols[lastIdx] || '';
-        
-        if (!first && !last && nameIdx !== -1 && cols[nameIdx]) {
-          const parts = cols[nameIdx].split(' ');
-          first = parts[0];
-          last = parts.slice(1).join(' ');
-        }
-
-        if (!first && !last) continue; // Skip empty rows
-
-        const row: ParsedRow = { firstName: first, lastName: last };
-        if (emailIdx !== -1 && cols[emailIdx]) row.email = cols[emailIdx];
-        if (categoryIdx !== -1 && cols[categoryIdx]) row.category = cols[categoryIdx];
-        if (portraitIdx !== -1 && cols[portraitIdx]) row.portraitUrl = cols[portraitIdx];
-        if (parentIdx !== -1 && cols[parentIdx]) row.parentId = cols[parentIdx];
-
-        detectedHeaders.forEach((h, idx) => {
-          if (idx !== firstIdx && idx !== lastIdx && idx !== nameIdx && idx !== emailIdx && idx !== categoryIdx && idx !== portraitIdx && idx !== parentIdx && cols[idx]) {
-            row[h] = cols[idx];
-          }
-        });
-        parsed.push(row);
-      }
-
-    } else if (ext === 'xlsx' || ext === 'xls') {
-      const { read, utils } = await import('xlsx');
-      const buffer = await file.arrayBuffer();
-      const wb = read(buffer, { type: 'array' });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const data: Record<string, string>[] = utils.sheet_to_json(ws, { defval: '' });
-
-      if (data.length === 0) { setError('No data found in the file.'); return; }
-
-      detectedHeaders = Object.keys(data[0]);
-      
-      const firstKey = detectedHeaders.find(h => ['first', 'prénom', 'prenom'].some(kw => h.toLowerCase().includes(kw)));
-      const lastKey = detectedHeaders.find(h => ['last', 'nom'].some(kw => h.toLowerCase().includes(kw)));
-      const nameKey = detectedHeaders.find(h => ['name', 'fullname'].some(kw => h.toLowerCase().includes(kw)));
-      const emailKey = detectedHeaders.find(h => ['email', 'mail'].some(kw => h.toLowerCase().includes(kw)));
-      const categoryKey = detectedHeaders.find(h => ['category', 'vip', 'type', 'status'].some(kw => h.toLowerCase().includes(kw)));
-      const portraitKey = detectedHeaders.find(h => ['portrait', 'image', 'photo'].some(kw => h.toLowerCase().includes(kw)));
-      const parentKey = detectedHeaders.find(h => ['parent', 'plusone', 'plus-one', 'principal'].some(kw => h.toLowerCase().includes(kw)));
-
-      if (!firstKey && !lastKey && !nameKey) {
-        setError('Could not find Name columns. Please ensure you have "First Name" and "Last Name" columns.');
-        return;
-      }
-
-      for (const row of data) {
-        let first = '', last = '';
-        if (firstKey) first = String(row[firstKey] ?? '').trim();
-        if (lastKey) last = String(row[lastKey] ?? '').trim();
-        
-        if (!first && !last && nameKey && row[nameKey]) {
-          const parts = String(row[nameKey]).trim().split(' ');
-          first = parts[0];
-          last = parts.slice(1).join(' ');
-        }
-
-        if (!first && !last) continue;
-
-        const entry: ParsedRow = { firstName: first, lastName: last };
-        if (emailKey && row[emailKey]) entry.email = String(row[emailKey]).trim();
-        if (categoryKey && row[categoryKey]) entry.category = String(row[categoryKey]).trim();
-        if (portraitKey && row[portraitKey]) entry.portraitUrl = String(row[portraitKey]).trim();
-        if (parentKey && row[parentKey]) entry.parentId = String(row[parentKey]).trim();
-
-        detectedHeaders.forEach(k => {
-          if (k !== firstKey && k !== lastKey && k !== nameKey && k !== emailKey && k !== categoryKey && k !== portraitKey && k !== parentKey && row[k] !== '' && row[k] !== undefined) {
-            entry[k] = String(row[k]);
-          }
-        });
-        parsed.push(entry);
-      }
-    } else {
+    if (!['csv', 'xlsx', 'xls'].includes(ext || '')) {
       setError('Please upload a .csv, .xlsx, or .xls file.');
       return;
     }
 
-    if (parsed.length === 0) {
-      setError('No valid guest rows found.');
-      return;
-    }
+    try {
+      setLoading(true);
+      const { read, utils } = await import('xlsx');
+      const buffer = await file.arrayBuffer();
+      const wb = read(buffer, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      
+      // Read as 2D array to handle headers manually and reliably
+      const rawData: any[][] = utils.sheet_to_json(ws, { defval: '', header: 1 });
 
-    const standardKeys = ['firstName', 'lastName', 'email', 'category'];
-    const extraHeaders = Array.from(new Set(parsed.flatMap(r => Object.keys(r).filter(k => !standardKeys.includes(k)))));
-    
-    setHeaders(extraHeaders);
-    setRows(parsed);
+      if (rawData.length < 2) {
+        setError('The file must contain a header row and at least one guest record.');
+        setLoading(false);
+        return;
+      }
+
+      const fileHeaders = rawData[0].map((h: any) => String(h || '').trim());
+      const dataRows = rawData.slice(1);
+
+      // Advanced Heuristic Mapping
+      const mappingDict = {
+        first: ['first', 'prénom', 'prenom', 'given', 'fname', '1st', 'prnom'],
+        last: ['last', 'nom', 'surname', 'family', 'lname', 'lastname'],
+        full: ['name', 'fullname', 'guest', 'nom complet', 'identity', 'nomcomplet'],
+        email: ['email', 'mail', 'courriel', 'e-mail', 'contact'],
+        category: ['category', 'vip', 'type', 'status', 'group', 'tag', 'catégorie', 'catgorie'],
+        portrait: ['portrait', 'image', 'photo', 'picture', 'avatar', 'url'],
+        plusOne: ['parent', 'plusone', 'plus-one', 'principal', 'host', 'associated']
+      };
+
+      const findIdx = (keywords: string[]) => 
+        fileHeaders.findIndex((h: string) => 
+          keywords.some(kw => h.toLowerCase().replace(/[^a-z0-9]/g, '').includes(kw))
+        );
+
+      const idxMap = {
+        first: findIdx(mappingDict.first),
+        last: findIdx(mappingDict.last),
+        full: findIdx(mappingDict.full),
+        email: findIdx(mappingDict.email),
+        category: findIdx(mappingDict.category),
+        portrait: findIdx(mappingDict.portrait),
+        plusOne: findIdx(mappingDict.plusOne)
+      };
+
+      if (idxMap.first === -1 && idxMap.last === -1 && idxMap.full === -1) {
+        setError('Header Identification Error: Could not find Name columns. Please label your columns clearly (e.g. "First Name").');
+        setLoading(false);
+        return;
+      }
+
+      const parsed: ParsedRow[] = [];
+      dataRows.forEach((cols: any[]) => {
+        let first = '', last = '';
+        
+        if (idxMap.first !== -1) first = String(cols[idxMap.first] || '').trim();
+        if (idxMap.last !== -1) last = String(cols[idxMap.last] || '').trim();
+
+        // Fallback to Full Name split if individual parts are missing
+        if (!first && !last && idxMap.full !== -1 && cols[idxMap.full]) {
+          const full = String(cols[idxMap.full]).trim();
+          const parts = full.split(' ');
+          first = parts[0];
+          last = parts.slice(1).join(' ');
+        }
+
+        // Only skip if there's absolutely no identifying data
+        if (!first && !last && (!idxMap.email || !cols[idxMap.email])) return; 
+
+        const row: ParsedRow = { firstName: first, lastName: last };
+        if (idxMap.email !== -1 && cols[idxMap.email]) row.email = String(cols[idxMap.email]).trim();
+        if (idxMap.category !== -1 && cols[idxMap.category]) row.category = String(cols[idxMap.category]).trim();
+        if (idxMap.portrait !== -1 && cols[idxMap.portrait]) row.portraitUrl = String(cols[idxMap.portrait]).trim();
+        if (idxMap.plusOne !== -1 && cols[idxMap.plusOne]) row.parentId = String(cols[idxMap.plusOne]).trim();
+
+        // Capture Extra Metadata for any columns not already mapped
+        fileHeaders.forEach((h: string, idx: number) => {
+          const isStandard = Object.values(idxMap).includes(idx);
+          if (!isStandard && cols[idx] !== undefined && String(cols[idx]).trim() !== '') {
+            row[h] = String(cols[idx]).trim();
+          }
+        });
+
+        parsed.push(row);
+      });
+
+      if (parsed.length === 0) {
+        setError('Semantic analysis found zero valid records in the provided file.');
+      } else {
+        const standardKeys = ['firstName', 'lastName', 'email', 'category', 'portraitUrl', 'parentId'];
+        const extraHeaders = Array.from(new Set(parsed.flatMap(r => Object.keys(r).filter(k => !standardKeys.includes(k)))));
+        setHeaders(extraHeaders);
+        setRows(parsed);
+      }
+    } catch (err) {
+      console.error('Handover Error:', err);
+      setError('Corrupted or invalid file format detected.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleImport() {
@@ -171,7 +160,7 @@ export default function ImportGuestsModal({ campaignId, onImported, onClose }: P
         body: JSON.stringify({ guests: rows, campaignId, ownerEmail: user.email.toLowerCase() }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Import failed');
+      if (!res.ok) throw new Error(data.error || 'Synchronization failed');
       setDone({ created: data.created, errors: data.errors?.length ?? 0 });
       onImported(data.guests);
     } catch (err) {
@@ -187,7 +176,7 @@ export default function ImportGuestsModal({ campaignId, onImported, onClose }: P
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-2xl transition-opacity animate-in fade-in duration-500" onClick={onClose} />
       
-      <div className="relative w-full max-w-3xl bg-white/[0.03] border border-white/5 backdrop-blur-3xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500">
+      <div className="relative w-full max-w-3xl bg-[#111111] border border-white/5 backdrop-blur-3xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500">
         <div className="px-10 py-8 border-b border-white/5 flex items-center justify-between">
           <div>
             <h2 className="text-3xl font-display font-bold text-white tracking-tight">Bulk Import</h2>
