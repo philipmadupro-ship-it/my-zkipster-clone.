@@ -86,9 +86,12 @@ export async function POST(req: NextRequest) {
             Please present this QR code at the entrance 30 minutes prior to the show start.
           </p>
 
-          <p style="font-size: 12px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 30px; letter-spacing: 0.1em; text-transform: uppercase;">
-            EMANUEL UNGARO &bull; PARIS
-          </p>
+          <div style="border-top: 1px solid #eee; padding-top: 30px; text-align: center;">
+            <p style="font-size: 9px; color: #999; text-transform: uppercase; letter-spacing: 0.4em; margin-bottom: 15px;">Event communications powered by</p>
+            <p style="font-size: 24px; color: #8b7355; text-transform: uppercase; letter-spacing: 0.3em; font-weight: 300; margin: 0 0 5px 0;">EMANUEL UNGARO</p>
+            <div style="width: 160px; height: 1px; background-color: #8b7355; opacity: 0.5; margin: 8px auto;"></div>
+            <p style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.5em; margin: 0;">PARIS</p>
+          </div>
         </div>
       `;
 

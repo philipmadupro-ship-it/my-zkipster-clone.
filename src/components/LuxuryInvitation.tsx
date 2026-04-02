@@ -109,8 +109,11 @@ export default function LuxuryInvitation({ guest, campaign }: { guest: Guest | n
           
           <div className="pt-4 space-y-3">
             <p className="text-[9px] uppercase tracking-[0.4em] text-luxury-muted font-light">Event communications powered by</p>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/ungaro-logo.svg" alt="Emanuel Ungaro Paris" className="h-14 mx-auto opacity-60" />
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 80" fill="none" className="h-14 mx-auto opacity-60">
+              <text x="200" y="35" textAnchor="middle" fontFamily="'Times New Roman', Times, serif" fontSize="28" fontWeight="300" letterSpacing="12" fill="#8b7355">EMANUEL UNGARO</text>
+              <line x1="120" y1="50" x2="280" y2="50" stroke="#8b7355" strokeWidth="0.5" opacity="0.5"/>
+              <text x="200" y="68" textAnchor="middle" fontFamily="'Times New Roman', Times, serif" fontSize="10" letterSpacing="8" fill="#999999">PARIS</text>
+            </svg>
           </div>
         </footer>
       </main>
