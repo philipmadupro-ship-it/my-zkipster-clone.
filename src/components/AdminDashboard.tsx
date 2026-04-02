@@ -290,18 +290,56 @@ export default function AdminDashboard() {
              <p className="text-xs text-gray-700 px-3 italic">No active campaigns</p>
            ) : (
              campaigns.map(c => (
-               <button
-                 key={c.id}
-                 onClick={() => setSelectedCampaign(c)}
-                 className={`w-full text-left px-4 py-3 rounded-2xl text-sm transition-all duration-300 group flex items-center justify-between
-                   ${selectedCampaign?.id === c.id 
-                     ? 'bg-white/10 text-white font-medium border border-white/10 shadow-[0_4px_12px_rgba(0,0,0,0.5)]' 
-                     : 'text-gray-500 hover:bg-white/5 hover:text-gray-200'}`}
-               >
-                 <span className="truncate">{c.name}</span>
-                 {selectedCampaign?.id === c.id && <div className="w-1 h-1 rounded-full bg-white shadow-[0_0_8px_white]" />}
-               </button>
-             ))
+                <div
+                  key={c.id}
+                  className={`group relative flex items-center rounded-2xl transition-all duration-300
+                    ${selectedCampaign?.id === c.id 
+                      ? 'bg-white/10 border border-white/10 shadow-[0_4px_12px_rgba(0,0,0,0.5)]' 
+                      : 'hover:bg-white/5'}`}
+                >
+                  <button
+                    onClick={() => setSelectedCampaign(c)}
+                    className={`flex-1 text-left px-4 py-3 text-sm transition-all duration-300 truncate
+                      ${selectedCampaign?.id === c.id 
+                        ? 'text-white font-medium' 
+                        : 'text-gray-500 hover:text-gray-200'}`}
+                  >
+                    {c.name}
+                  </button>
+                  {/* Delete button - visible on hover */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!window.confirm(`🚨 Delete "${c.name}" and ALL its guests?\n\nThis cannot be undone.`)) return;
+                      (async () => {
+                        setIsDeleting(true);
+                        try {
+                          const res = await fetch('/api/delete-campaign', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ campaignId: c.id }),
+                          });
+                          if (!res.ok) throw new Error('Failed');
+                          if (selectedCampaign?.id === c.id) {
+                            setSelectedCampaign(null);
+                            setGuests([]);
+                          }
+                          showToast('Campaign deleted', 'success');
+                        } catch {
+                          showToast('Failed to delete campaign', 'error');
+                        } finally {
+                          setIsDeleting(false);
+                        }
+                      })();
+                    }}
+                    disabled={isDeleting}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-2 mr-1 text-gray-600 hover:text-red-400 rounded-lg hover:bg-red-500/10 disabled:opacity-50"
+                    title={`Delete ${c.name}`}
+                  >
+                    🗑️
+                  </button>
+                </div>
+              ))
            )}
 
             {selectedCampaign && (
