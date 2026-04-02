@@ -54,6 +54,7 @@ export interface CampaignData {
   slug?: string;
   eventDate?: string;
   eventTime?: string;
+  eventEndTime?: string;
   eventVenue?: string;
   language?: 'en' | 'fr';
   emailImageUrl?: string;
@@ -88,6 +89,7 @@ function AdminDashboardContent() {
   const [newCampaignName, setNewCampaignName] = useState('');
   const [newEventDate, setNewEventDate] = useState('');
   const [newEventTime, setNewEventTime] = useState('');
+  const [newEventEndTime, setNewEventEndTime] = useState('');
   const [newEventVenue, setNewEventVenue] = useState('');
   const [newCampaignLanguage, setNewCampaignLanguage] = useState<'en'|'fr'>('en');
   const [newCampaignLogoVariant, setNewCampaignLogoVariant] = useState<'black'|'white'|'img-pink'|'img-black'|'img-white'>('black');
@@ -211,6 +213,7 @@ function AdminDashboardContent() {
           ownerEmail: user.email.toLowerCase(),
           eventDate: newEventDate,
           eventTime: newEventTime,
+          eventEndTime: newEventEndTime,
           eventVenue: newEventVenue,
           language: newCampaignLanguage,
           emailImageUrl: newCampaignEmailImage,
@@ -224,6 +227,7 @@ function AdminDashboardContent() {
       setNewCampaignName('');
       setNewEventDate('');
       setNewEventTime('');
+      setNewEventEndTime('');
       setNewEventVenue('');
       setNewCampaignEmailImage('');
       setNewCampaignMessage('');
@@ -234,6 +238,7 @@ function AdminDashboardContent() {
         ownerEmail: data.ownerEmail,
         eventDate: data.eventDate,
         eventTime: data.eventTime,
+        eventEndTime: data.eventEndTime || '',
         eventVenue: data.eventVenue,
         language: data.language || 'en',
         logoVariant: data.logoVariant || 'black',
@@ -425,21 +430,28 @@ function AdminDashboardContent() {
                   type="text"
                   placeholder="Event Date (e.g. Tuesday, 3 March)"
                   value={newEventDate}
+                  onChange={(e) => setNewEventDate(e.target.value)}
                   className="w-full bg-gray-950 border border-gray-800 rounded-lg text-[10px] py-2 px-3 outline-none focus:border-violet-600 transition"
                 />
                 <div className="flex gap-2">
-                  <input
-                    type="date"
-                    value={newEventDate}
-                    onChange={(e) => setNewEventDate(e.target.value)}
-                    className="w-1/2 bg-gray-950 border border-gray-800 rounded-lg text-[10px] py-2 px-3 outline-none focus:border-violet-600 transition"
-                  />
-                  <input
-                    type="time"
-                    value={newEventTime}
-                    onChange={(e) => setNewEventTime(e.target.value)}
-                    className="w-1/2 bg-gray-950 border border-gray-800 rounded-lg text-[10px] py-2 px-3 outline-none focus:border-violet-600 transition"
-                  />
+                  <div className="w-1/2 space-y-1">
+                    <label className="text-[8px] uppercase tracking-widest text-gray-500 font-bold pl-1">Start Time</label>
+                    <input
+                      type="time"
+                      value={newEventTime}
+                      onChange={(e) => setNewEventTime(e.target.value)}
+                      className="w-full bg-gray-950 border border-gray-800 rounded-lg text-[10px] py-2 px-3 outline-none focus:border-violet-600 transition"
+                    />
+                  </div>
+                  <div className="w-1/2 space-y-1">
+                    <label className="text-[8px] uppercase tracking-widest text-gray-500 font-bold pl-1">End Time</label>
+                    <input
+                      type="time"
+                      value={newEventEndTime}
+                      onChange={(e) => setNewEventEndTime(e.target.value)}
+                      className="w-full bg-gray-950 border border-gray-800 rounded-lg text-[10px] py-2 px-3 outline-none focus:border-violet-600 transition"
+                    />
+                  </div>
                 </div>
                 <input
                   type="text"

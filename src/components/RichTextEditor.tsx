@@ -42,8 +42,14 @@ export default function RichTextEditor({ value, onChange, placeholder, className
         placeholder={placeholder}
         modules={{
           toolbar: [
-            ['bold', 'italic', 'underline'],
+            [{ 'header': [1, 2, 3, false] }],
+            [{ 'font': [] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'color': [] }, { 'background': [] }],
+            [{ 'align': [] }],
             [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            [{ 'indent': '-1'}, { 'indent': '+1' }],
+            ['link', 'image'],
             ['clean']
           ]
         }}

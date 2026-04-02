@@ -245,41 +245,62 @@ export default function SendInvitationsModal({ campaign, guests, onClose, onSent
 
               {/* Section 4: Decoration Image (Drag & Drop) */}
               <div className="space-y-4">
-                <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted">Decoration Image (Drag & Drop)</label>
+                <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted">Decoration Image (Drag & Drop from Computer)</label>
                 <div 
                   onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                   onDragLeave={() => setIsDragging(false)}
                   onDrop={(e) => {
                     e.preventDefault();
                     setIsDragging(false);
+                    // Native file drop from OS
+                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                      const file = e.dataTransfer.files[0];
+                      if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setEmailImageUrl(reader.result as string);
+                        };
+                        reader.readAsDataURL(file);
+                        return;
+                      }
+                    }
+                    // URL text drop fallback
                     const text = e.dataTransfer.getData('text');
                     if (text && text.startsWith('http')) setEmailImageUrl(text);
                   }}
-                  className={`border-2 border-dashed rounded-xl p-8 transition-all duration-500 flex flex-col items-center justify-center text-center gap-3 relative overflow-hidden ${
+                  className={`border-2 border-dashed rounded-xl p-8 transition-all duration-500 flex flex-col items-center justify-center text-center gap-3 relative overflow-hidden cursor-pointer ${
                     isDragging 
                       ? 'border-luxury-gold bg-luxury-gold/5 scale-[1.02]' 
                       : emailImageUrl 
                         ? 'border-emerald-500/20 bg-emerald-500/5' 
                         : 'border-gray-100 hover:border-gray-300 bg-gray-50/50'
                   }`}
+                  onClick={() => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/*';
+                    input.onchange = (ev) => {
+                      const file = (ev.target as HTMLInputElement).files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => setEmailImageUrl(reader.result as string);
+                        reader.readAsDataURL(file);
+                      }
+                    };
+                    input.click();
+                  }}
                 >
                   {emailImageUrl ? (
                     <>
                       <img src={emailImageUrl} alt="Decoration Preview" className="h-20 w-auto object-cover rounded shadow-sm mb-2" />
                       <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest">Image Mounted</p>
-                      <button onClick={() => setEmailImageUrl('')} className="text-[9px] text-gray-400 hover:text-red-500 underline uppercase tracking-tighter">Remove</button>
+                      <button onClick={(e) => { e.stopPropagation(); setEmailImageUrl(''); }} className="text-[9px] text-gray-400 hover:text-red-500 underline uppercase tracking-tighter">Remove</button>
                     </>
                   ) : (
                     <>
                       <div className="text-3xl grayscale opacity-20">🖼️</div>
-                      <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Drop Image URL here</p>
-                      <input 
-                        type="text" 
-                        placeholder="or paste URL"
-                        value={emailImageUrl}
-                        onChange={(e) => setEmailImageUrl(e.target.value)}
-                        className="mt-2 w-full max-w-[200px] bg-white border border-gray-200 rounded px-3 py-1.5 text-[9px] text-center outline-none focus:border-luxury-gold transition-all"
-                      />
+                      <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Drop image file or click to browse</p>
+                      <p className="text-[8px] text-gray-400 uppercase tracking-wider">PNG, JPG, WebP accepted</p>
                     </>
                   )}
                 </div>
