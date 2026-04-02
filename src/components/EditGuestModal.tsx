@@ -14,7 +14,6 @@ export default function EditGuestModal({ guest, onGuestUpdated, onClose }: Props
   const [lastName, setLastName] = useState(guest.lastName || '');
   const [email, setEmail] = useState(guest.email || '');
   const [category, setCategory] = useState(guest.category || 'Standard');
-  const [seatNumber, setSeatNumber] = useState(guest.seatNumber || '');
   const [portraitUrl, setPortraitUrl] = useState(guest.portraitUrl || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -34,7 +33,6 @@ export default function EditGuestModal({ guest, onGuestUpdated, onClose }: Props
           lastName,
           email,
           category,
-          seatNumber,
           portraitUrl,
         }),
       });
@@ -48,7 +46,6 @@ export default function EditGuestModal({ guest, onGuestUpdated, onClose }: Props
         lastName,
         email,
         category,
-        seatNumber,
         portraitUrl,
       });
       onClose();
@@ -64,7 +61,7 @@ export default function EditGuestModal({ guest, onGuestUpdated, onClose }: Props
       <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
       <form 
         onSubmit={handleSubmit}
-        className="relative w-full max-w-lg bg-white rounded-sm shadow-2xl overflow-hidden animate-fade-up"
+        className="relative w-full max-w-lg bg-[#0a0a0a] border border-white/10 rounded-sm shadow-2xl overflow-hidden animate-fade-up"
       >
         <div className="p-8 border-b border-gray-100 flex items-center justify-between bg-luxury-off-white">
           <div>
@@ -112,31 +109,19 @@ export default function EditGuestModal({ guest, onGuestUpdated, onClose }: Props
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted ml-0.5">Category</label>
-              <select
-                value={category}
-                onChange={e => setCategory(e.target.value)}
-                className="w-full bg-transparent border-b border-gray-200 py-3 text-sm text-luxury-dark outline-none focus:border-luxury-gold transition-all duration-500 uppercase tracking-widest text-[10px] font-bold"
-              >
-                <option value="VIP">VIP</option>
-                <option value="Press">Press</option>
-                <option value="Influencer">Influencer</option>
-                <option value="Buyer">Buyer</option>
-                <option value="Standard">Standard</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted ml-0.5">Seat Assign</label>
-              <input
-                type="text"
-                value={seatNumber}
-                placeholder="e.g. A-01"
-                onChange={e => setSeatNumber(e.target.value)}
-                className="w-full bg-transparent border-b border-gray-200 py-3 text-sm text-luxury-dark outline-none focus:border-luxury-gold transition-all duration-500"
-              />
-            </div>
+          <div className="space-y-2">
+            <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted ml-0.5">Category</label>
+            <select
+              value={category}
+              onChange={e => setCategory(e.target.value)}
+              className="w-full bg-transparent border-b border-gray-200 py-3 text-sm text-luxury-dark outline-none focus:border-luxury-gold transition-all duration-500 uppercase tracking-widest text-[10px] font-bold"
+            >
+              <option value="VIP">VIP</option>
+              <option value="Press">Press</option>
+              <option value="Influencer">Influencer</option>
+              <option value="Buyer">Buyer</option>
+              <option value="Standard">Standard</option>
+            </select>
           </div>
 
           <div className="space-y-2">

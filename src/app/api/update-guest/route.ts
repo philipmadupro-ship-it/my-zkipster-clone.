@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const { guestId, firstName, lastName, email, category, seatNumber, portraitUrl } = await req.json();
+    const { guestId, firstName, lastName, email, category, portraitUrl } = await req.json();
 
     if (!guestId) {
       return NextResponse.json({ error: 'guestId is required' }, { status: 400 });
@@ -24,7 +24,6 @@ export async function POST(req: NextRequest) {
       lastName: lastName?.trim() || '',
       email: email?.trim() || '',
       category: category || 'Standard',
-      seatNumber: seatNumber?.trim() || '',
       portraitUrl: portraitUrl?.trim() || '',
       // Update the legacy name field for compatibility
       name: `${firstName?.trim() || ''} ${lastName?.trim() || ''}`.trim(),

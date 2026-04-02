@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const { firstName, lastName, email, category, campaignId, ownerEmail, seatNumber, portraitUrl, parentId } = await req.json();
+    const { firstName, lastName, email, category, campaignId, ownerEmail, portraitUrl, parentId } = await req.json();
 
     if (!firstName || !lastName || !campaignId || !ownerEmail) {
       return NextResponse.json({ error: 'firstName, lastName, campaignId, and ownerEmail are required' }, { status: 400 });
@@ -34,8 +34,7 @@ export async function POST(req: NextRequest) {
       category: category || 'Standard',
       status: 'invited',
       qrCodeUrl,
-      seatNumber: seatNumber || '',
-      portraitUrl: portraitUrl || '',
+      portraitUrl: portraitUrl?.trim() || '',
       parentId: parentId || '',
       rsvpLink: '—', // Link is unified per campaign now
       confirmedAt: null,
@@ -49,6 +48,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ...guest, createdAt: new Date().toISOString() });
   } catch (err) {
     console.error('add-guest error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Failed to register guest', 
+      details: err instanceof Error ? err.message : 'Unknown error' 
+    }, { status: 500 });
   }
 }

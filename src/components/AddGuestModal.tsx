@@ -20,7 +20,6 @@ export interface GuestData {
   extraFields?: Record<string, string>;
   portraitUrl?: string;
   parentId?: string;
-  seatNumber?: string;
 }
 
 interface Props {
@@ -36,7 +35,6 @@ export default function AddGuestModal({ campaignId, guests, onGuestAdded, onClos
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [category, setCategory] = useState('Standard');
-  const [seatNumber, setSeatNumber] = useState('');
   const [portraitUrl, setPortraitUrl] = useState('');
   const [parentId, setParentId] = useState('');
   const [loading, setLoading] = useState(false);
@@ -61,7 +59,6 @@ export default function AddGuestModal({ campaignId, guests, onGuestAdded, onClos
           category,
           campaignId, 
           ownerEmail: user?.email?.toLowerCase(),
-          seatNumber: seatNumber.trim(),
           portraitUrl: portraitUrl.trim(),
           parentId: parentId
         }),
@@ -78,9 +75,9 @@ export default function AddGuestModal({ campaignId, guests, onGuestAdded, onClos
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-2xl transition-opacity animate-in fade-in duration-500" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-md transition-opacity animate-in fade-in duration-500" onClick={onClose} />
       
-      <div className="relative w-full max-w-xl bg-white/[0.03] border border-white/5 backdrop-blur-3xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500">
+      <div className="relative w-full max-w-xl bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500">
         <div className="p-10">
           <div className="flex justify-between items-start mb-10">
             <div className="space-y-1">
@@ -136,31 +133,19 @@ export default function AddGuestModal({ campaignId, guests, onGuestAdded, onClos
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-8">
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500 ml-1 font-sans">Profile Category / VIP Status</label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full bg-transparent border-b border-white/10 py-3 text-white outline-none focus:border-white transition-colors appearance-none cursor-pointer text-sm"
-                >
-                  <option value="Standard" className="bg-black text-white">Standard Guest</option>
-                  <option value="VIP" className="bg-black text-white">VIP Profile</option>
-                  <option value="Press" className="bg-black text-white">Press / Media</option>
-                  <option value="Staff" className="bg-black text-white">Event Staff</option>
-                  <option value="Speaker" className="bg-black text-white">Guest Speaker</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500 ml-1 font-sans">Seat Number</label>
-                <input
-                  type="text"
-                  placeholder="e.g. A-12"
-                  value={seatNumber}
-                  onChange={(e) => setSeatNumber(e.target.value)}
-                  className="w-full bg-transparent border-b border-white/10 py-3 text-white outline-none focus:border-white transition-colors placeholder:text-gray-800 text-sm"
-                />
-              </div>
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500 ml-1 font-sans">Profile Category / VIP Status</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full bg-transparent border-b border-white/10 py-3 text-white outline-none focus:border-white transition-colors appearance-none cursor-pointer text-sm"
+              >
+                <option value="Standard" className="bg-black text-white">Standard Guest</option>
+                <option value="VIP" className="bg-black text-white">VIP Profile</option>
+                <option value="Press" className="bg-black text-white">Press / Media</option>
+                <option value="Staff" className="bg-black text-white">Event Staff</option>
+                <option value="Speaker" className="bg-black text-white">Guest Speaker</option>
+              </select>
             </div>
 
             <div className="space-y-2">

@@ -509,7 +509,6 @@ export default function AdminDashboard() {
                                         <span className="text-[8px] bg-white/10 text-gray-400 px-1.5 py-0.5 rounded uppercase tracking-tighter">Plus One</span>
                                       )}
                                     </span>
-                                    {guest.seatNumber && <span className="text-[9px] text-luxury-gold uppercase tracking-widest mt-0.5">{guest.seatNumber}</span>}
                                   </div>
                                 </td>
                                 <td className="px-8 py-6 text-xs text-gray-500 whitespace-nowrap font-mono">{guest.email || '—'}</td>
