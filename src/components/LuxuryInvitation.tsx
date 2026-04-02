@@ -100,16 +100,17 @@ export default function LuxuryInvitation({ guest, campaign }: { guest: Guest | n
 
         </div>
         
-        {/* Footer */}
-        <footer className="w-full border-t border-gray-100 py-12 px-12 text-center space-y-8 bg-white animate-fade-up delay-500">
+        {/* Footer with Brand Logo */}
+        <footer className="w-full border-t border-gray-100 py-10 px-12 text-center space-y-6 bg-white animate-fade-up delay-500">
           <div className="flex items-baseline justify-center gap-1">
             <a href="#" className="text-blue-600 underline text-sm hover:text-blue-800 transition-colors">Click here</a>
             <span className="text-luxury-muted text-sm font-light">to unsubscribe</span>
           </div>
           
-          <div className="pt-8 space-y-3">
-            <p className="text-[10px] uppercase tracking-[0.4em] text-luxury-muted font-light">Event communications powered by</p>
-            <p className="font-cormorant text-2xl uppercase tracking-[0.3em] text-gray-400 font-light translate-y-1">Emanuel Ungaro</p>
+          <div className="pt-4 space-y-3">
+            <p className="text-[9px] uppercase tracking-[0.4em] text-luxury-muted font-light">Event communications powered by</p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/ungaro-logo.svg" alt="Emanuel Ungaro Paris" className="h-14 mx-auto opacity-60" />
           </div>
         </footer>
       </main>

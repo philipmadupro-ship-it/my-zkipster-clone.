@@ -141,12 +141,11 @@ export default function LuxuryRSVPClient({ guest, campaign }: { guest: Guest, ca
 
         </div>
         
-        {/* Footer */}
-        <footer className="w-full border-t border-gray-100 py-12 px-12 text-center space-y-6 bg-white shrink-0">
-          <div className="space-y-3">
-            <p className="text-[10px] font-light uppercase tracking-[0.4em] text-luxury-muted">Event communications powered by</p>
-            <p className="font-cormorant text-2xl uppercase tracking-[0.3em] text-gray-400 font-light translate-y-1">Emanuel Ungaro</p>
-          </div>
+        {/* Footer with Brand Logo */}
+        <footer className="w-full border-t border-gray-100 py-10 px-12 text-center space-y-4 bg-white shrink-0">
+          <p className="text-[9px] font-light uppercase tracking-[0.4em] text-luxury-muted">Event communications powered by</p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/ungaro-logo.svg" alt="Emanuel Ungaro Paris" className="h-14 mx-auto opacity-60" />
         </footer>
       </main>
     </div>
