@@ -10,8 +10,6 @@ import { useAuth } from '@/context/AuthContext';
 import dynamic from 'next/dynamic';
 import { type GuestData } from './AddGuestModal';
 
-import 'react-quill/dist/quill.snow.css';
-
 const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
 const AddGuestModal = dynamic(() => import('./AddGuestModal'), { ssr: false });
 const ImportGuestsModal = dynamic(() => import('./ImportGuestsModal'), { ssr: false });
