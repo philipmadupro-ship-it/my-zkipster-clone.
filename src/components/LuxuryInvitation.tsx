@@ -21,11 +21,29 @@ interface Campaign {
   eventDate?: string;
   eventTime?: string;
   eventVenue?: string;
+  language?: 'en' | 'fr';
 }
 
 export default function LuxuryInvitation({ guest, campaign }: { guest: Guest | null, campaign: Campaign | null }) {
   const name = guest?.name || 'Yann';
   
+  const isFr = campaign?.language === 'fr';
+  const t = {
+    greeting: isFr ? 'Cher/Chère' : 'Dear',
+    confirmMsg: isFr 
+      ? `Nous sommes ravis de confirmer votre invitation à l'événement `
+      : `We are delighted to confirm your invitation to the `,
+    dateTimeText: isFr ? 'Date & Heure:' : 'Date & Time:',
+    venueText: isFr ? 'Lieu:' : 'Venue:',
+    atText: isFr ? 'à' : 'at',
+    guestSelectionText: isFr ? 'SÉLECTION DES INVITÉS' : 'GUEST SELECTION',
+    poweredBy: isFr ? 'Communications événementielles par' : 'Event communications powered by',
+    qrInst: isFr ? 'Veuillez présenter le code QR ci-joint à l\'entrée.' : 'Please present the QR code attached to this email at the entrance to check in.',
+    changesMsg: isFr ? 'Pour toute modification de votre réservation, veuillez nous en informer à ' : 'For attendance changes, please notify us at ',
+    clickHere: isFr ? 'Cliquez ici' : 'Click here',
+    toUnsub: isFr ? 'pour vous désabonner' : 'to unsubscribe'
+  };
+
   return (
     <div className="min-h-screen bg-luxury-off-white flex flex-col items-center justify-center p-6 sm:p-12 font-sans text-luxury-dark selection:bg-luxury-gold selection:text-white relative">
       {/* Background Gradient */}
@@ -42,23 +60,23 @@ export default function LuxuryInvitation({ guest, campaign }: { guest: Guest | n
           {/* Greeting & Message */}
           <section className="space-y-6 mb-12 animate-fade-up delay-200">
             <h2 className="text-2xl font-medium text-luxury-dark">
-              Dear {guest?.firstName && guest?.lastName ? `${guest.firstName} ${guest.lastName}` : name.split(' ').filter((v, i, a) => !a.some((x, j) => j < i && x.toLowerCase() === v.toLowerCase())).join(' ')},
+              {t.greeting} {guest?.firstName && guest?.lastName ? `${guest.firstName} ${guest.lastName}` : name.split(' ').filter((v, i, a) => !a.some((x, j) => j < i && x.toLowerCase() === v.toLowerCase())).join(' ')},
             </h2>
             <p className="text-luxury-muted leading-relaxed max-w-[400px] mx-auto text-[15px]">
-              We are delighted to confirm your invitation to the <span className="text-luxury-dark font-medium border-b border-luxury-gold/30 pb-0.5 tracking-tighter">{campaign?.name || 'Exclusive Fashion Event'}</span>.
+              {t.confirmMsg} <span className="text-luxury-dark font-medium border-b border-luxury-gold/30 pb-0.5 tracking-tighter">{campaign?.name || 'Exclusive Fashion Event'}</span>.
             </p>
           </section>
 
           {/* Event Details Box */}
           <section className="w-full bg-luxury-off-white border-l-[3px] border-luxury-gold p-8 text-left space-y-4 mb-12 animate-fade-up delay-300">
             <div className="flex flex-col sm:flex-row sm:gap-2">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-luxury-dark w-28 shrink-0">Date & Time:</span>
+              <span className="text-[11px] font-bold uppercase tracking-widest text-luxury-dark w-28 shrink-0">{t.dateTimeText}</span>
               <span className="text-[14px] text-luxury-dark">
-                {campaign?.eventDate || 'Date TBD'} at {campaign?.eventTime || 'Time TBD'}.
+                {campaign?.eventDate || 'Date TBD'} {t.atText} {campaign?.eventTime || 'Time TBD'}.
               </span>
             </div>
             <div className="flex flex-col sm:flex-row sm:gap-2">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-luxury-dark w-28 shrink-0">Venue:</span>
+              <span className="text-[11px] font-bold uppercase tracking-widest text-luxury-dark w-28 shrink-0">{t.venueText}</span>
               <span className="text-[14px] text-luxury-dark">{campaign?.eventVenue || 'Venue TBD'}</span>
             </div>
           </section>
@@ -85,10 +103,10 @@ export default function LuxuryInvitation({ guest, campaign }: { guest: Guest | n
             
             <div className="space-y-4 max-w-[380px]">
               <p className="text-[13px] text-luxury-dark leading-relaxed">
-                Please present the QR code attached to this email at the entrance to check in.
+                {t.qrInst}
               </p>
               <p className="text-[13px] text-luxury-muted italic text-center">
-                For attendance changes, please notify us at <span className="underline">pressoffice@ungaro.com</span>
+                {t.changesMsg} <span className="underline">pressoffice@ungaro.com</span>
               </p>
             </div>
           </section>
@@ -98,12 +116,12 @@ export default function LuxuryInvitation({ guest, campaign }: { guest: Guest | n
         {/* Footer with Brand Logo */}
         <footer className="w-full border-t border-gray-100 py-10 px-12 text-center space-y-6 bg-white animate-fade-up delay-500">
           <div className="flex items-baseline justify-center gap-1">
-            <a href="#" className="text-blue-600 underline text-sm hover:text-blue-800 transition-colors">Click here</a>
-            <span className="text-luxury-muted text-sm font-light">to unsubscribe</span>
+            <a href="#" className="text-blue-600 underline text-sm hover:text-blue-800 transition-colors">{t.clickHere}</a>
+            <span className="text-luxury-muted text-sm font-light">{t.toUnsub}</span>
           </div>
           
           <div className="pt-4 space-y-3">
-            <p className="text-[9px] uppercase tracking-[0.4em] text-gray-400 font-light">Event communications powered by</p>
+            <p className="text-[9px] uppercase tracking-[0.4em] text-gray-400 font-light">{t.poweredBy}</p>
             <UngaroLogo className="h-10 opacity-70" color="#000000" />
           </div>
         </footer>

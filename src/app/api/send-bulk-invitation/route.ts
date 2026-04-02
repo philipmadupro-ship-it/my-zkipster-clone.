@@ -67,17 +67,52 @@ export async function POST(req: NextRequest) {
 
         const rsvpLink = `${host}/rsvp/${guestId}`;
         
+        const isDark = campaign.logoVariant === 'white';
+        const bgColor = isDark ? '#050505' : '#ffffff';
+        const textColor = isDark ? '#ffffff' : '#1a1a1a';
+        const borderColor = isDark ? '#222222' : '#eeeeee';
+        const buttonBg = isDark ? '#ffffff' : '#1a1a1a';
+        const buttonText = isDark ? '#000000' : '#ffffff';
+        const logoColor = isDark ? '#ffffff' : '#000000';
+        
+        // Define translations
+        const isFr = campaign.language === 'fr';
+        const greeting = isFr ? 'Cher/Chère' : 'Dear';
+        const viewInviteText = isFr ? 'Accéder à l\'Invitation Numérique' : 'Access Digital Invitation';
+        const poweredByText = isFr ? 'Communications événementielles par' : 'Event communications powered by';
+
+        // Render standard message or rich text message
+        const messageBody = campaign.emailMessage 
+          ? campaign.emailMessage // Rich Text
+          : `<p style="font-size: 15px; margin-bottom: 40px; white-space: pre-wrap;">${customMessage}</p>`;
+
+        // Decorative Image Logic
+        const decorativeImageHtml = campaign.emailImageUrl 
+          ? `<div style="text-align: center; margin-top: 40px; margin-bottom: 20px;">
+               <img src="${campaign.emailImageUrl}" alt="Event Decoration" style="max-width: 100%; height: auto; border-radius: 4px;" />
+             </div>` 
+          : '';
+
         const htmlContent = `
-          <div style="font-family: 'Times New Roman', Times, serif; max-width: 600px; margin: 0 auto; padding: 40px; border: 1px solid #eee; color: #1a1a1a; line-height: 1.6;">
-            <h1 style="text-align: center; text-transform: uppercase; letter-spacing: 0.3em; color: #8b7355; font-weight: 300; margin-bottom: 40px;">EMANUEL UNGARO</h1>
-            <p style="font-size: 16px; margin-bottom: 30px;">Dear ${guest.firstName || guest.name || 'Guest'},</p>
-            <p style="font-size: 15px; margin-bottom: 40px; white-space: pre-wrap;">${customMessage}</p>
-            <div style="text-align: center; margin-bottom: 50px;">
-              <a href="${rsvpLink}" style="display: inline-block; background-color: #1a1a1a; color: #fff; padding: 20px 40px; text-decoration: none; text-transform: uppercase; font-size: 12px; letter-spacing: 0.3em; font-weight: bold;">Access Digital Invitation</a>
-            </div>
-            <div style="border-top: 1px solid #eee; padding-top: 30px; text-align: center;">
-              <p style="font-size: 9px; color: #999; text-transform: uppercase; letter-spacing: 0.4em; margin-bottom: 15px;">Event communications powered by</p>
-              <p style="font-family: 'Futura', 'Century Gothic', 'Arial Black', sans-serif; font-size: 28px; color: #000000; font-weight: bold; text-transform: lowercase; letter-spacing: -0.02em; margin: 0; line-height: 1;">emanuel ungaro</p>
+          <div style="background-color: ${bgColor}; padding: 40px 10px;">
+            <div style="background-color: ${bgColor}; font-family: 'Times New Roman', Times, serif; max-width: 600px; margin: 0 auto; padding: 40px; border: 1px solid ${borderColor}; color: ${textColor}; line-height: 1.6;">
+              <h1 style="text-align: center; text-transform: uppercase; letter-spacing: 0.3em; color: #8b7355; font-weight: 300; margin-bottom: 40px;">EMANUEL UNGARO</h1>
+              <p style="font-size: 16px; margin-bottom: 30px;">${greeting} ${guest.firstName || guest.name || ''},</p>
+              
+              <div style="margin-bottom: 40px;">
+                ${messageBody}
+              </div>
+              
+              <div style="text-align: center; margin-bottom: 30px;">
+                <a href="${rsvpLink}" style="display: inline-block; background-color: ${buttonBg}; color: ${buttonText}; padding: 20px 40px; text-decoration: none; text-transform: uppercase; font-size: 12px; letter-spacing: 0.3em; font-weight: bold;">${viewInviteText}</a>
+              </div>
+              
+              ${decorativeImageHtml}
+
+              <div style="border-top: 1px solid ${borderColor}; padding-top: 30px; margin-top: 50px; text-align: center;">
+                <p style="font-size: 9px; color: #999; text-transform: uppercase; letter-spacing: 0.4em; margin-bottom: 15px;">${poweredByText}</p>
+                <p style="font-family: 'Futura', 'Century Gothic', 'Arial Black', sans-serif; font-size: 28px; color: ${logoColor}; font-weight: bold; text-transform: lowercase; letter-spacing: -0.02em; margin: 0; line-height: 1;">emanuel ungaro</p>
+              </div>
             </div>
           </div>
         `;

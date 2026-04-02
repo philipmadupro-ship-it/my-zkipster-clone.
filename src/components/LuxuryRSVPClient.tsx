@@ -20,6 +20,7 @@ interface Campaign {
   eventDate?: string;
   eventTime?: string;
   eventVenue?: string;
+  language?: 'en' | 'fr';
 }
 
 export default function LuxuryRSVPClient({ guest, campaign }: { guest: Guest, campaign: Campaign | null }) {
@@ -54,6 +55,25 @@ export default function LuxuryRSVPClient({ guest, campaign }: { guest: Guest, ca
     }
   }
 
+  const isFr = campaign?.language === 'fr';
+  const t = {
+    header: isFr ? 'Confirmer la Présence' : 'Confirm Attendance',
+    greetingKnown: isFr 
+      ? `Bienvenue, ${guest.name}. Veuillez confirmer vos coordonnées pour générer votre pass d'accès numérique.`
+      : `Welcome, ${guest.name}. Please confirm your attendance details to generate your digital access pass.`,
+    greetingUnknown: isFr
+      ? `Bienvenue. Veuillez fournir votre nom complet pour générer vos identifiants d'accès exclusifs.`
+      : `Welcome. Please provide your full name to generate your exclusive entry credentials.`,
+    guestIdText: isFr ? 'Identification de l\'Invité' : 'Guest Identification',
+    enterFullName: isFr ? 'ENTRER LE NOM COMPLET' : 'ENTER FULL NAME',
+    confirmBtn: isFr ? 'Confirmer l\'Inscription' : 'Confirm Registration',
+    declineBtn: isFr ? 'Décliner' : 'Decline',
+    syncing: isFr ? 'Synchronisation avec le Registre...' : 'Syncing with Registry...',
+    errorDefault: isFr ? 'Erreur système. Veuillez réessayer.' : 'The system could not finalize your registration at this time.',
+    returnToReg: isFr ? 'Retour à l\'inscription' : 'Return to registration',
+    poweredBy: isFr ? 'Communications événementielles par' : 'Event communications powered by'
+  };
+
   // If confirmed, show the elegant invitation view
   if (state === 'confirmed') {
     return <LuxuryInvitation guest={{ ...guest, name: name || guest.name, status: 'confirmed', qrCodeUrl }} campaign={campaign} />;
@@ -76,21 +96,19 @@ export default function LuxuryRSVPClient({ guest, campaign }: { guest: Guest, ca
             <div className="w-full space-y-12 animate-fade-up delay-200">
               <section className="space-y-4">
                 <h2 className="text-2xl font-medium text-luxury-dark">
-                  Confirm Attendance
+                  {t.header}
                 </h2>
                 <p className="text-luxury-muted leading-relaxed max-w-[400px] mx-auto text-[14px]">
-                  {guest.name 
-                    ? `Welcome, ${guest.name}. Please confirm your attendance details to generate your digital access pass for the FW26 runway show.`
-                    : 'Welcome. Please provide your full name to synchronize with the guest registry and generate your exclusive entry credentials.'}
+                  {guest.name ? t.greetingKnown : t.greetingUnknown}
                 </p>
               </section>
 
               <form onSubmit={handleConfirm} className="space-y-10 text-left">
                 <div className="space-y-3">
-                  <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted ml-0.5">Guest Identification</label>
+                  <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-luxury-muted ml-0.5">{t.guestIdText}</label>
                   <input
                     type="text"
-                    placeholder="ENTER FULL NAME"
+                    placeholder={t.enterFullName}
                     value={name}
                     onChange={e => setName(e.target.value)}
                     required
@@ -103,14 +121,14 @@ export default function LuxuryRSVPClient({ guest, campaign }: { guest: Guest, ca
                     type="submit"
                     className="flex-1 bg-luxury-dark text-white font-medium py-5 rounded-sm transition-all duration-500 hover:bg-black active:scale-[0.98] uppercase text-[11px] tracking-[0.3em] shadow-sm"
                   >
-                    Confirm Registration
+                    {t.confirmBtn}
                   </button>
                   <button
                     type="button"
                     onClick={() => setState('error')}
                     className="px-8 py-5 rounded-sm border border-gray-100 text-luxury-muted font-medium text-[11px] uppercase tracking-[0.3em] hover:text-luxury-dark hover:bg-luxury-off-white transition-all"
                   >
-                    Decline
+                    {t.declineBtn}
                   </button>
                 </div>
               </form>
@@ -120,20 +138,20 @@ export default function LuxuryRSVPClient({ guest, campaign }: { guest: Guest, ca
           {state === 'loading' && (
             <div className="py-24 text-center space-y-8 animate-fade-up">
               <div className="w-12 h-12 border border-luxury-gold border-t-transparent rounded-full animate-spin mx-auto" />
-              <p className="text-[10px] text-luxury-muted uppercase tracking-[0.4em] font-light animate-pulse">Syncing with Registry...</p>
+              <p className="text-[10px] text-luxury-muted uppercase tracking-[0.4em] font-light animate-pulse">{t.syncing}</p>
             </div>
           )}
 
           {state === 'error' && (
             <div className="py-24 text-center space-y-10 animate-fade-up">
               <p className="text-luxury-dark text-[15px] font-light leading-relaxed max-w-[350px] mx-auto">
-                {error || 'The system could not finalize your registration at this time. Please contact event staff or try again later.'}
+                {error || t.errorDefault}
               </p>
               <button 
                 onClick={() => { setState('idle'); setError(''); }} 
                 className="text-[10px] font-bold text-luxury-gold uppercase tracking-[0.3em] border-b border-luxury-gold/30 hover:border-luxury-gold transition-all pb-1"
               >
-                Return to registration
+                {t.returnToReg}
               </button>
             </div>
           )}
@@ -142,7 +160,7 @@ export default function LuxuryRSVPClient({ guest, campaign }: { guest: Guest, ca
         
         {/* Footer with Brand Logo */}
         <footer className="w-full border-t border-gray-100 py-10 px-12 text-center space-y-4 bg-white shrink-0">
-          <p className="text-[9px] font-light uppercase tracking-[0.4em] text-gray-400">Event communications powered by</p>
+          <p className="text-[9px] font-light uppercase tracking-[0.4em] text-gray-400">{t.poweredBy}</p>
           <UngaroLogo className="h-10 opacity-70" color="#000000" />
         </footer>
       </main>

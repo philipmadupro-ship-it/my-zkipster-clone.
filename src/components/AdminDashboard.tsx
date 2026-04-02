@@ -10,6 +10,9 @@ import { useAuth } from '@/context/AuthContext';
 import dynamic from 'next/dynamic';
 import { type GuestData } from './AddGuestModal';
 
+import 'react-quill/dist/quill.snow.css';
+
+const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
 const AddGuestModal = dynamic(() => import('./AddGuestModal'), { ssr: false });
 const ImportGuestsModal = dynamic(() => import('./ImportGuestsModal'), { ssr: false });
 const LiveArrivalFeed = dynamic(() => import('./LiveArrivalFeed'), { ssr: false });
@@ -26,6 +29,10 @@ export interface CampaignData {
   eventDate?: string;
   eventTime?: string;
   eventVenue?: string;
+  language?: 'en' | 'fr';
+  emailImageUrl?: string;
+  logoVariant?: 'black' | 'white';
+  emailMessage?: string;
   createdAt?: any;
 }
 
@@ -48,6 +55,10 @@ export default function AdminDashboard() {
   const [newEventDate, setNewEventDate] = useState('');
   const [newEventTime, setNewEventTime] = useState('');
   const [newEventVenue, setNewEventVenue] = useState('');
+  const [newCampaignLanguage, setNewCampaignLanguage] = useState<'en'|'fr'>('en');
+  const [newCampaignLogoVariant, setNewCampaignLogoVariant] = useState<'black'|'white'>('black');
+  const [newCampaignEmailImage, setNewCampaignEmailImage] = useState('');
+  const [newCampaignMessage, setNewCampaignMessage] = useState('');
   const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
 
   const [guests, setGuests] = useState<GuestData[]>([]);
@@ -166,7 +177,11 @@ export default function AdminDashboard() {
           ownerEmail: user.email.toLowerCase(),
           eventDate: newEventDate,
           eventTime: newEventTime,
-          eventVenue: newEventVenue
+          eventVenue: newEventVenue,
+          language: newCampaignLanguage,
+          emailImageUrl: newCampaignEmailImage,
+          logoVariant: newCampaignLogoVariant,
+          emailMessage: newCampaignMessage
         }),
       });
       const data = await res.json();
@@ -176,6 +191,9 @@ export default function AdminDashboard() {
       setNewEventDate('');
       setNewEventTime('');
       setNewEventVenue('');
+      setNewCampaignEmailImage('');
+      setNewCampaignMessage('');
+      
       setSelectedCampaign({ 
         id: data.id, 
         name: data.name, 
@@ -379,13 +397,40 @@ export default function AdminDashboard() {
                   onChange={(e) => setNewEventTime(e.target.value)}
                   className="w-full bg-gray-950 border border-gray-800 rounded-lg text-[10px] py-2 px-3 outline-none focus:border-violet-600 transition"
                 />
+                <div className="flex gap-2">
+                  <select
+                    value={newCampaignLanguage}
+                    onChange={(e) => setNewCampaignLanguage(e.target.value as 'en'|'fr')}
+                    className="w-1/2 bg-gray-950 border border-gray-800 rounded-lg text-[10px] py-2 px-3 outline-none focus:border-violet-600 transition uppercase"
+                  >
+                    <option value="en">English Email</option>
+                    <option value="fr">French Email</option>
+                  </select>
+                  <select
+                    value={newCampaignLogoVariant}
+                    onChange={(e) => setNewCampaignLogoVariant(e.target.value as 'black'|'white')}
+                    className="w-1/2 bg-gray-950 border border-gray-800 rounded-lg text-[10px] py-2 px-3 outline-none focus:border-violet-600 transition uppercase"
+                  >
+                    <option value="black">Black Logo</option>
+                    <option value="white">White Logo</option>
+                  </select>
+                </div>
                 <input
                   type="text"
-                  placeholder="Event Venue"
-                  value={newEventVenue}
-                  onChange={(e) => setNewEventVenue(e.target.value)}
+                  placeholder="Bottom Decoration Image URL (Optional)"
+                  value={newCampaignEmailImage}
+                  onChange={(e) => setNewCampaignEmailImage(e.target.value)}
                   className="w-full bg-gray-950 border border-gray-800 rounded-lg text-[10px] py-2 px-3 outline-none focus:border-violet-600 transition"
                 />
+                <div className="text-[10px] rounded-lg overflow-hidden border border-gray-800 bg-gray-950 text-white leading-normal">
+                  <ReactQuill
+                    theme="snow"
+                    value={newCampaignMessage}
+                    onChange={setNewCampaignMessage}
+                    placeholder="Write your email securely here... (bold, italic, etc)"
+                    className="h-24 mb-10 text-white"
+                  />
+                </div>
                 <button 
                   type="submit" 
                   disabled={isCreatingCampaign || !newCampaignName.trim()}
@@ -456,6 +501,30 @@ export default function AdminDashboard() {
                      <span>✉️</span> DISPATCH
                    </button>
                    
+                   <button
+                     onClick={() => {
+                       if(window.confirm('Dispatch 1-Week Reminders to ALL guests?\n\n- Pending guests will receive RSVP prompts.\n- Confirmed guests will receive their Entry QR codes again.\n\nThis may take a moment to dispatch.')) {
+                         (async () => {
+                           try {
+                             showToast('Dispatching 1-Week remiders...', 'success');
+                             const res = await fetch('/api/send-reminders', {
+                               method: 'POST',
+                               headers: { 'Content-Type': 'application/json' },
+                               body: JSON.stringify({ campaignId: selectedCampaign.id, origin: window.location.origin }),
+                             });
+                             if(!res.ok) throw new Error('Failed to send');
+                             const data = await res.json();
+                             showToast(`Successfully dispatched ${data.sentCount} reminders!`, 'success');
+                           } catch {
+                             showToast('Failed to dispatch reminders', 'error');
+                           }
+                         })();
+                       }
+                     }}
+                     className="bg-white/5 hover:bg-white/10 text-white text-[10px] sm:text-[11px] font-bold px-4 sm:px-6 py-2.5 rounded-2xl transition border border-white/10 active:scale-95 shadow-lg flex items-center gap-2"
+                   >
+                     <span>⏱️</span> 1-WEEK REMINDER
+                   </button>
                    
                    <button
                      onClick={() => setShowImport(true)}
