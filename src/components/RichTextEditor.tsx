@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import 'react-quill/dist/quill.snow.css';
+import 'react-quill-new/dist/quill.snow.css';
 
 // Lazy-load the editor itself with no SSR
-const QuillWrapper = dynamic(() => import('react-quill'), { 
+const QuillWrapper = dynamic(() => import('react-quill-new'), { 
   ssr: false,
   loading: () => <div className="h-24 bg-gray-900 border border-gray-800 rounded-lg animate-pulse flex items-center justify-center text-[10px] text-gray-600">Initializing editor...</div>
 });
