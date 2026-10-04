@@ -60,6 +60,21 @@ From Firebase Console -> Project Settings -> Service Accounts -> Generate new pr
 - `client_email` -> `FIREBASE_CLIENT_EMAIL`
 - `private_key` -> `FIREBASE_PRIVATE_KEY`
 
+## Access control
+
+- **Admin API routes** (campaigns, guests, imports, dispatch, reminders, check-in) require a signed-in
+  Firebase user. The dashboard sends the user's ID token and the server verifies it.
+- Set **`ADMIN_EMAILS`** to the people allowed in (full addresses and/or `@domain` entries). With it
+  unset, all admin requests are refused. Anyone can create a Firebase account, so this list is what
+  actually decides who can send email from your SMTP account.
+- Campaign-level actions (edit, delete, import, send) also require that the caller **owns** the
+  campaign; the owner is taken from the verified token, never from the request body.
+- Public routes, by design: the RSVP/invitation pages, `/c/<slug>` claim page, `/api/lookup-guest`
+  and `/api/confirm-rsvp`.
+- **Firestore rules** live in `firestore.rules`. Clients may only read their own campaigns and those
+  campaigns' guests; all writes go through the API. Deploy them with
+  `firebase deploy --only firestore:rules` (or paste them into Firebase Console → Firestore → Rules).
+
 ## Notes
 
 - `FROM_EMAIL` must be a sender that Resend allows for your account/domain.

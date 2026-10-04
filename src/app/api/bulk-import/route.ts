@@ -2,18 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import QRCode from 'qrcode';
 import { getAdminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
+import { requireAdmin, getOwnedCampaign, handleApiError } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const { guests, campaignId, ownerEmail } = await req.json();
+    const user = await requireAdmin(req);
+    const { guests, campaignId } = await req.json();
 
-    if (!Array.isArray(guests) || !campaignId || !ownerEmail) {
-      return NextResponse.json({ error: 'guests array, campaignId, and ownerEmail are required' }, { status: 400 });
+    if (!Array.isArray(guests) || !campaignId) {
+      return NextResponse.json({ error: 'guests array and campaignId are required' }, { status: 400 });
     }
 
     const db = getAdminDb();
+    await getOwnedCampaign(db, campaignId, user);
+
     const results = [];
     const errors = [];
 
@@ -48,7 +52,7 @@ export async function POST(req: NextRequest) {
           confirmedAt: null,
           arrivedAt: null,
           createdAt: FieldValue.serverTimestamp(),
-          ownerEmail: ownerEmail,
+          ownerEmail: user.email, // taken from the verified token, never from the request body
           extraFields: extraFields ?? {},
         };
 
@@ -61,7 +65,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ created: results.length, errors, guests: results });
   } catch (err) {
-    console.error('bulk-import error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(err, 'bulk-import');
   }
 }

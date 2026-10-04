@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { authedFetch } from '@/lib/api-client';
 import { useAuth } from '@/context/AuthContext';
 
 export interface GuestData {
@@ -49,7 +50,7 @@ export default function AddGuestModal({ campaignId, guests, onGuestAdded, onClos
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/add-guest', {
+      const res = await authedFetch('/api/add-guest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

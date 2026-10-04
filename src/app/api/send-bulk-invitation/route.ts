@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
-import nodemailer from 'nodemailer';
+import { requireAdmin, getOwnedCampaign, handleApiError } from '@/lib/auth';
+import { createMailTransport, escapeHtml, getBaseUrl, safeImageUrl } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
+const MAX_GUESTS_PER_REQUEST = 500;
+
 export async function POST(req: NextRequest) {
   try {
+    const user = await requireAdmin(req);
     const { campaignId, guestIds, subject, customMessage, origin } = await req.json();
 
     // SMTP Diagnostic Check for Vercel
@@ -17,49 +21,35 @@ export async function POST(req: NextRequest) {
       }, { status: 500 });
     }
 
-    if (!campaignId || !guestIds || !Array.isArray(guestIds)) {
+    if (!campaignId || !Array.isArray(guestIds)) {
       return NextResponse.json({ error: 'campaignId and guestIds are required' }, { status: 400 });
+    }
+    if (guestIds.length > MAX_GUESTS_PER_REQUEST) {
+      return NextResponse.json({ error: `Send at most ${MAX_GUESTS_PER_REQUEST} guests per request.` }, { status: 400 });
     }
 
     const db = getAdminDb();
-    
-    // 1. Fetch Campaign Details
-    const campaignDoc = await db.collection('campaigns').doc(campaignId).get();
-    if (!campaignDoc.exists) {
-      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
-    }
-    const campaign = campaignDoc.data()!;
 
-    // 2. Setup Nodemailer (Encourage user to set these in .env.local)
-    // For now, we use a fallback or placeholder. 
-    // IMPORTANT: In production, these must be real credentials.
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.office365.com',
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_SECURE === 'true', // false for 587
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-      tls: {
-        ciphers: 'SSLv3',
-        rejectUnauthorized: false
-      }
-    });
+    // 1. Fetch Campaign Details (and confirm the caller owns it)
+    const { data: campaign } = await getOwnedCampaign(db, campaignId, user);
+
+    // 2. Setup Nodemailer
+    const transporter = createMailTransport();
 
     const results = {
       success: 0,
       failed: 0,
     };
 
-    // Use the origin passed from the browser (most reliable), then env var, then headers
-    const host = origin || process.env.NEXT_PUBLIC_APP_URL || `${req.headers.get('x-forwarded-proto') || 'https'}://${req.headers.get('host') || 'localhost:3000'}`;
+    // The dashboard passes its own origin so links point at the deployment being used.
+    const host = getBaseUrl(origin);
 
     // 3. Process guests strictly sequentially (as requested by user: 'not at the same time')
     for (const guestId of guestIds) {
       try {
-        const guestDoc = await db.collection('guests').doc(guestId).get();
-        if (!guestDoc.exists) {
+        const guestDoc = await db.collection('guests').doc(String(guestId)).get();
+        // Only email guests that belong to this campaign.
+        if (!guestDoc.exists || guestDoc.data()!.campaignId !== campaignId) {
           results.failed++;
           continue;
         }
@@ -84,12 +74,13 @@ export async function POST(req: NextRequest) {
         // Render standard message or rich text message
         const messageBody = campaign.emailMessage 
           ? campaign.emailMessage // Rich Text
-          : `<p style="font-size: 15px; margin-bottom: 40px; white-space: pre-wrap;">${customMessage}</p>`;
+          : `<p style="font-size: 15px; margin-bottom: 40px; white-space: pre-wrap;">${escapeHtml(customMessage)}</p>`;
 
         // Decorative Image Logic
-        const decorativeImageHtml = campaign.emailImageUrl 
+        const decorativeImageUrl = safeImageUrl(campaign.emailImageUrl);
+        const decorativeImageHtml = decorativeImageUrl
           ? `<div style="text-align: center; margin-top: 40px; margin-bottom: 20px;">
-               <img src="${campaign.emailImageUrl}" alt="Event Decoration" style="max-width: 100%; height: auto; border-radius: 4px;" />
+               <img src="${decorativeImageUrl}" alt="Event Decoration" style="max-width: 100%; height: auto; border-radius: 4px;" />
              </div>` 
           : '';
 
@@ -113,7 +104,7 @@ export async function POST(req: NextRequest) {
           <div style="background-color: ${bgColor}; padding: 40px 10px;">
             <div style="background-color: ${bgColor}; font-family: 'Times New Roman', Times, serif; max-width: 600px; margin: 0 auto; padding: 40px; border: 1px solid ${borderColor}; color: ${textColor}; line-height: 1.6;">
               ${headerLogoHtml}
-              <p style="font-size: 16px; margin-bottom: 30px;">${greeting} ${guest.firstName || guest.name || ''},</p>
+              <p style="font-size: 16px; margin-bottom: 30px;">${greeting} ${escapeHtml(guest.firstName || guest.name || '')},</p>
               
               <div style="margin-bottom: 40px;">
                 ${messageBody}
@@ -165,7 +156,6 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (err) {
-    console.error('send-bulk-invitation error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(err, 'send-bulk-invitation');
   }
 }

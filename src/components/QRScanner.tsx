@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { authedFetch } from '@/lib/api-client';
 import { Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode';
 
 interface ScanResult {
@@ -47,7 +48,7 @@ export default function QRScanner() {
     setCurrentGuestId(guestId);
 
     try {
-      const res = await fetch(`/api/guest/${guestId}`);
+      const res = await authedFetch(`/api/guest/${guestId}`);
       if (!res.ok) {
         setScanResult({ status: 'not_found', error: 'Guest not found' });
         return;
@@ -71,7 +72,7 @@ export default function QRScanner() {
     if (!currentGuestId) return;
     setCheckingIn(true);
     try {
-      const res = await fetch('/api/checkin', {
+      const res = await authedFetch('/api/checkin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ guestId: currentGuestId }),

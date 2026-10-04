@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { authedFetch } from '@/lib/api-client';
 import { type GuestData } from './AddGuestModal';
 
 interface Props {
@@ -24,7 +25,7 @@ export default function EditGuestModal({ guest, onGuestUpdated, onClose }: Props
     setError('');
 
     try {
-      const res = await fetch('/api/update-guest', {
+      const res = await authedFetch('/api/update-guest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

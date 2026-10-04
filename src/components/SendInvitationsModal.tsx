@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '@/lib/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { authedFetch } from '@/lib/api-client';
 import { type GuestData } from './AddGuestModal';
 import { type CampaignData } from './AdminDashboard';
 import RichTextEditor from './RichTextEditor';
@@ -43,14 +42,22 @@ export default function SendInvitationsModal({ campaign, guests, onClose, onSent
     setSentCount(0);
     
     try {
-      // 1. Sync branding settings to Firestore Campaign doc first
-      const campRef = doc(db, 'campaigns', campaign.id);
-      await updateDoc(campRef, {
-        language,
-        logoVariant,
-        emailImageUrl,
-        emailMessage: customMessage
+      // 1. Sync branding settings to the campaign first (server-side; clients can't write to Firestore)
+      const saveRes = await authedFetch('/api/update-campaign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          campaignId: campaign.id,
+          language,
+          logoVariant,
+          emailImageUrl,
+          emailMessage: customMessage,
+        }),
       });
+      if (!saveRes.ok) {
+        const saveData = await saveRes.json().catch(() => ({}));
+        throw new Error(saveData.error || 'Failed to save branding settings');
+      }
 
       // 2. Batch dispatch
       const BATCH_SIZE = 100;
@@ -68,7 +75,7 @@ export default function SendInvitationsModal({ campaign, guests, onClose, onSent
       for (let i = 0; i < chunks.length; i++) {
         setCurrentBatch(i + 1);
         
-        const res = await fetch('/api/send-bulk-invitation', {
+        const res = await authedFetch('/api/send-bulk-invitation', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
