@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { authedFetch } from '@/lib/api-client';
 import { useAuth } from '@/context/AuthContext';
+import { DEFAULT_TAGS, MAX_NOTES_LENGTH, MAX_TAG_LENGTH } from '@/lib/guest-fields';
 
 export interface GuestData {
   id: string;
@@ -21,6 +22,8 @@ export interface GuestData {
   extraFields?: Record<string, string>;
   portraitUrl?: string;
   parentId?: string;
+  notes?: string;
+  arrivedBy?: string | null;
 }
 
 interface Props {
@@ -36,6 +39,8 @@ export default function AddGuestModal({ campaignId, guests, onGuestAdded, onClos
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [category, setCategory] = useState('Standard');
+  const [notes, setNotes] = useState('');
+  const tagSuggestions = Array.from(new Set([...DEFAULT_TAGS, ...guests.map((g) => g.category).filter((t): t is string => !!t)]));
   const [portraitUrl, setPortraitUrl] = useState('');
   const [parentId, setParentId] = useState('');
   const [loading, setLoading] = useState(false);
@@ -58,6 +63,7 @@ export default function AddGuestModal({ campaignId, guests, onGuestAdded, onClos
           lastName: lastName.trim(), 
           email: email.trim(), 
           category,
+          notes,
           campaignId, 
           ownerEmail: user?.email?.toLowerCase(),
           portraitUrl: portraitUrl.trim(),
@@ -143,18 +149,19 @@ export default function AddGuestModal({ campaignId, guests, onGuestAdded, onClos
             {/* Category + Portrait row */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-[9px] uppercase tracking-widest font-bold text-gray-500">Category</label>
-                <select
+                <label className="text-[9px] uppercase tracking-widest font-bold text-gray-500">Tag</label>
+                <input
+                  list="guest-tags"
+                  type="text"
+                  maxLength={MAX_TAG_LENGTH}
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-white/30 transition-colors appearance-none cursor-pointer"
-                >
-                  <option value="Standard" className="bg-[#111] text-white">Standard</option>
-                  <option value="VIP" className="bg-[#111] text-white">VIP</option>
-                  <option value="Press" className="bg-[#111] text-white">Press</option>
-                  <option value="Staff" className="bg-[#111] text-white">Staff</option>
-                  <option value="Speaker" className="bg-[#111] text-white">Speaker</option>
-                </select>
+                  placeholder="Standard"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-white/30 transition-colors placeholder:text-gray-700"
+                />
+                <datalist id="guest-tags">
+                  {tagSuggestions.map((t) => <option key={t} value={t} />)}
+                </datalist>
               </div>
               <div className="space-y-1">
                 <label className="text-[9px] uppercase tracking-widest font-bold text-gray-500">Plus-One of</label>
@@ -182,6 +189,19 @@ export default function AddGuestModal({ campaignId, guests, onGuestAdded, onClos
                 value={portraitUrl}
                 onChange={(e) => setPortraitUrl(e.target.value)}
                 className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-white/30 transition-colors placeholder:text-gray-700"
+              />
+            </div>
+
+            {/* Notes - shown at the door */}
+            <div className="space-y-1">
+              <label className="text-[9px] uppercase tracking-widest font-bold text-gray-500">Notes <span className="text-gray-700">(shown at the door)</span></label>
+              <textarea
+                rows={2}
+                maxLength={MAX_NOTES_LENGTH}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="e.g. seat near the front"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-white/30 transition-colors placeholder:text-gray-700 resize-none"
               />
             </div>
           </div>

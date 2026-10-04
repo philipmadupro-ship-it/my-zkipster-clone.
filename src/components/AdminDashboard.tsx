@@ -4,12 +4,14 @@ import React, { useState, useEffect, Component } from 'react';
 import { authedFetch } from '@/lib/api-client';
 import { useRouter } from 'next/navigation';
 import UngaroLogo from './UngaroLogo';
-import { signOut } from 'firebase/auth';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import dynamic from 'next/dynamic';
 import { type GuestData } from './AddGuestModal';
+import GuestList from './GuestList';
+import { useGuests } from '@/lib/use-guests';
+import { postCheckIn } from '@/lib/checkin-client';
+import { describeCheckIn } from '@/lib/checkin';
+import { applyCheckInLocally, formatClock } from '@/lib/guest-list';
 
 import RichTextEditor from './RichTextEditor';
 const AddGuestModal = dynamic(() => import('./AddGuestModal'), { ssr: false });
@@ -82,7 +84,7 @@ export default function AdminDashboard() {
 }
 
 function AdminDashboardContent() {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const router = useRouter();
   
   const [campaigns, setCampaigns] = useState<CampaignData[]>([]);
@@ -98,11 +100,10 @@ function AdminDashboardContent() {
   const [newCampaignMessage, setNewCampaignMessage] = useState('');
   const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
 
-  const [guests, setGuests] = useState<GuestData[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' | 'warning' } | null>(null);
   const [dbError, setDbError] = useState<string | null>(null);
   const [origin, setOrigin] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -122,83 +123,80 @@ function AdminDashboardContent() {
     if (!loading && !user) router.push('/login');
   }, [user, loading, router]);
 
-  // Realtime Firestore listener for CAMPAIGNS
-  useEffect(() => {
-    if (!user?.email) return;
+  // Bumping this reloads the campaign list straight away (after creating or deleting one).
+  const [refreshTick, setRefreshTick] = useState(0);
+  const refreshCampaigns = () => setRefreshTick(t => t + 1);
 
-    const email = user.email.toLowerCase().trim();
-    console.log('[Dashboard] Subscribing to campaigns for:', email);
-    
-    const q = query(
-      collection(db, 'campaigns'),
-      where('ownerEmail', '==', email)
-    );
-    const unsubscribe = onSnapshot(q, (snap) => {
-      const data = snap.docs.map(d => ({ ...(d.data() as Omit<CampaignData, 'id'>), id: d.id }));
-      // Stable client-side sort: newest first
-      data.sort((a: any, b: any) => {
-          const timeA = a.createdAt?.toMillis?.() || (a.createdAt instanceof Date ? a.createdAt.getTime() : 0);
-          const timeB = b.createdAt?.toMillis?.() || (b.createdAt instanceof Date ? b.createdAt.getTime() : 0);
-          return timeB - timeA;
-      });
-      console.log('[Dashboard] Campaigns update:', data.length);
-      setCampaigns(data);
-      
-      // Auto-select first campaign if none selected
-      if (data.length > 0 && !selectedCampaign) {
-          setSelectedCampaign(data[0]); 
+  // Keeps the campaign list fresh: polls every few seconds while the tab is visible.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const res = await authedFetch('/api/campaigns');
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.error || `Request failed (${res.status})`);
+        if (cancelled) return;
+        const data: CampaignData[] = body.campaigns;
+        setCampaigns(data);
+        // Keep the open campaign in sync with its latest copy, or open the first one.
+        setSelectedCampaign(prev => {
+          if (!prev) return data[0] ?? null;
+          const latest = data.find(c => c.id === prev.id);
+          return latest && JSON.stringify(latest) !== JSON.stringify(prev) ? latest : prev;
+        });
+        setDbError(null);
+      } catch (err) {
+        if (!cancelled) setDbError(`Could not load campaigns: ${err instanceof Error ? err.message : String(err)}`);
       }
-      setDbError(null);
-    }, (err) => {
-      console.error('[Dashboard] Campaigns error:', err);
-      setDbError(`Firebase Error (Campaigns): ${err.message}`);
-    });
-    return () => unsubscribe();
-  }, [user?.email]);
-
-  // Realtime Firestore listener for GUESTS
-  useEffect(() => {
-    if (!user?.email || !selectedCampaign?.id) {
-        setGuests([]);
-        return;
     }
 
-    // Prevent 'ghosting' by clearing guest data immediately on campaign change
-    setGuests([]);
+    const onVisible = () => { if (document.visibilityState === 'visible') load(); };
+    load();
+    const timer = setInterval(onVisible, 5000);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [user, refreshTick]);
 
-    const email = user.email.toLowerCase().trim();
-    console.log('[Dashboard] Subscribing to guests for campaign:', selectedCampaign.id, 'user:', email);
-    
-    // REMOVED ownerEmail where to avoid composite index requirements
-    // campaignId is unique enough to fetch guests securely
-    const q = query(
-      collection(db, 'guests'),
-      where('campaignId', '==', selectedCampaign.id)
-    );
+  // The open campaign's guests, refreshed every few seconds while the tab is visible.
+  const selectedCampaignId = selectedCampaign?.id;
+  const { guests, updateGuests, error: guestsError, refresh: refreshGuests } = useGuests<GuestData>(selectedCampaignId, !!user, 4000);
+  useEffect(() => { if (guestsError) setDbError(guestsError); }, [guestsError]);
 
-    const unsubscribe = onSnapshot(q, (snap) => {
-      const data = snap.docs.map(d => ({ ...(d.data() as any), id: d.id })) as GuestData[];
-      
-      // Client-side sort: newest first
-      data.sort((a, b) => {
-        const timeA = (a.createdAt as any)?.seconds || 0;
-        const timeB = (b.createdAt as any)?.seconds || 0;
-        return timeB - timeA;
-      });
+  // Check-in in flight (so a button can't be pressed twice).
+  const [checkingIds, setCheckingIds] = useState<Set<string>>(new Set());
 
-      console.log('[Dashboard] Guests update for:', selectedCampaign.name, data.length);
-      setGuests(data);
-    }, (err) => {
-      console.error('[Dashboard] Guests error:', err);
-      setDbError(`Firebase Error (Guests): ${err.message}`);
-    });
-    
-    return () => unsubscribe();
-  }, [selectedCampaign]);
-
-  function showToast(msg: string, type: 'success' | 'error') {
+  function showToast(msg: string, type: 'success' | 'error' | 'warning') {
     setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
+    // Warnings (like "already checked in by...") stay a little longer so they can be read.
+    setTimeout(() => setToast(null), type === 'warning' ? 7000 : 3000);
+  }
+
+  // Checks one guest, several guests or a whole party in (or undoes it). The rows
+  // update at once; the refresh that follows confirms with the server and corrects
+  // them if the request failed or someone else got there first.
+  async function handleCheckIn(ids: string[], undo: boolean) {
+    if (ids.length === 0) return;
+    setCheckingIds(prev => new Set([...prev, ...ids]));
+    updateGuests(prev => applyCheckInLocally(prev, ids, undo, user?.email ?? ''));
+    const res = await postCheckIn(ids, undo);
+    if (res.ok) {
+      const { text, kind } = describeCheckIn(res.results, undo, formatClock);
+      showToast(text, kind);
+    } else {
+      showToast(res.error, 'error');
+    }
+    setCheckingIds(prev => {
+      const next = new Set(prev);
+      ids.forEach(id => next.delete(id));
+      return next;
+    });
+    refreshGuests();
   }
 
   async function handleCreateCampaign(e: React.FormEvent) {
@@ -246,6 +244,7 @@ function AdminDashboardContent() {
         emailImageUrl: data.emailImageUrl || '',
         emailMessage: data.emailMessage || ''
       });
+      refreshCampaigns();
       showToast('Campaign created!', 'success');
     } catch (err) {
       showToast('Failed to create campaign', 'error');
@@ -281,7 +280,7 @@ function AdminDashboardContent() {
       if (!res.ok) throw new Error('Failed to delete campaign');
       
       setSelectedCampaign(null);
-      setGuests([]);
+      refreshCampaigns();
       showToast('Campaign deleted successfully', 'success');
     } catch (err) {
       showToast('Failed to delete campaign', 'error');
@@ -301,6 +300,7 @@ function AdminDashboardContent() {
         body: JSON.stringify({ guestId }),
       });
       if (!res.ok) throw new Error('Failed to delete guest');
+      refreshGuests();
       showToast('Guest deleted', 'success');
     } catch (err) {
       showToast('Failed to delete guest', 'error');
@@ -324,7 +324,9 @@ function AdminDashboardContent() {
         <div className={`fixed top-5 right-5 z-50 px-4 py-3 rounded-xl border text-sm shadow-xl transition-all
           ${toast.type === 'success'
             ? 'bg-emerald-900/80 border-emerald-700 text-emerald-200'
-            : 'bg-red-900/80 border-red-700 text-red-200'}`}>
+            : toast.type === 'warning'
+              ? 'bg-amber-900/80 border-amber-600 text-amber-100'
+              : 'bg-red-900/80 border-red-700 text-red-200'}`}>
           {toast.msg}
         </div>
       )}
@@ -385,8 +387,8 @@ function AdminDashboardContent() {
                           if (!res.ok) throw new Error('Failed');
                           if (selectedCampaign?.id === c.id) {
                             setSelectedCampaign(null);
-                            setGuests([]);
                           }
+                          refreshCampaigns();
                           showToast('Campaign deleted', 'success');
                         } catch {
                           showToast('Failed to delete campaign', 'error');
@@ -484,7 +486,7 @@ function AdminDashboardContent() {
                   <p className="text-[10px] font-bold text-white uppercase tracking-widest truncate">{user.email?.split('@')[0]}</p>
                 </div>
               </div>
-              <button onClick={() => signOut(auth)} className="text-[10px] text-gray-500 hover:text-red-400 transition font-bold tracking-widest uppercase">Logout</button>
+              <button onClick={async () => { await logout(); router.push('/login'); }} className="text-[10px] text-gray-500 hover:text-red-400 transition font-bold tracking-widest uppercase">Logout</button>
            </div>
            
             <button
@@ -599,119 +601,17 @@ function AdminDashboardContent() {
               {/* Arrival Analytics */}
               <ArrivalAnalytics guests={guests} />
 
-              {/* Guest Table */}
-              <div className="bg-white/[0.02] border border-white/5 backdrop-blur-3xl rounded-[2.5rem] overflow-hidden shadow-2xl transition-all duration-700 hover:border-white/10">
-                {guests.length === 0 ? (
-                  <div className="py-40 text-center">
-                    <div className="text-6xl mb-6 grayscale opacity-20">🎟️</div>
-                    <p className="text-white font-display text-xl font-bold tracking-tight">Your guest list is empty</p>
-                    <p className="text-gray-600 text-[10px] mt-2 uppercase tracking-[0.2em]">Begin by importing data or manual entry</p>
-                  </div>
-                ) : (() => {
-                  const extraKeys = Array.from(new Set(guests.flatMap(g => Object.keys(g.extraFields ?? {}))));
-                  return (
-                    <div className="overflow-x-auto custom-scrollbar">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="bg-white/5 border-b border-white/5">
-                            {['', 'Guest Name', 'Email Index', 'Profile', 'Status', ...extraKeys, 'Registered', ''].map((h, i) => (
-                              <th key={i} className={`${i === 0 ? 'w-16 px-4' : 'px-8'} py-6 text-[10px] text-gray-500 uppercase tracking-[0.3em] font-bold whitespace-nowrap font-display`}>
-                                {h}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/[0.03]">
-                          {guests.map((guest) => {
-                            const badge = STATUS_BADGE[guest.status] ?? STATUS_BADGE.invited;
-                            return (
-                              <tr key={guest.id} className={`hover:bg-white/[0.03] transition-all duration-300 group ${guest.parentId ? 'bg-white/[0.01]' : ''}`}>
-                                <td className="px-4 py-6 whitespace-nowrap">
-                                  <div className="flex items-center justify-center">
-                                    {guest.portraitUrl ? (
-                                      /* eslint-disable-next-line @next/next/no-img-element */
-                                      <img 
-                                        src={guest.portraitUrl} 
-                                        alt={guest.name} 
-                                        className="w-10 h-10 rounded-full object-cover border border-white/10 shadow-lg"
-                                        onError={(e) => { (e.target as any).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(guest.name || 'G')}&background=333&color=fff`; }}
-                                      />
-                                    ) : (
-                                      <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-bold text-gray-500">
-                                        {(guest.firstName || guest.name || '?').charAt(0)}
-                                      </div>
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="px-8 py-6 text-sm font-medium text-white whitespace-nowrap tracking-tight">
-                                  <div className="flex flex-col">
-                                    <span className="flex items-center gap-2">
-                                      {guest.name || <span className="text-gray-700 italic">Unnamed Guest</span>}
-                                      {guest.parentId && (
-                                        <span className="text-[8px] bg-white/10 text-gray-400 px-1.5 py-0.5 rounded uppercase tracking-tighter">Plus One</span>
-                                      )}
-                                    </span>
-                                  </div>
-                                </td>
-                                <td className="px-8 py-6 text-xs text-gray-500 whitespace-nowrap font-mono">{guest.email || '—'}</td>
-                                <td className="px-8 py-6 whitespace-nowrap">
-                                  {guest.category && guest.category !== 'Standard' ? (
-                                    <span className={`text-[9px] font-bold px-2.5 py-1 rounded-full border tracking-widest
-                                      ${guest.category === 'VIP' ? 'bg-white text-black border-transparent shadow-[0_0_15px_rgba(255,255,255,0.3)]' : 
-                                        'bg-white/5 border-white/10 text-gray-300'}`}>
-                                      {guest.category.toUpperCase()}
-                                    </span>
-                                  ) : (
-                                    <span className="text-[9px] text-gray-700 font-mono tracking-widest">STANDARD</span>
-                                  )}
-                                </td>
-                                <td className="px-8 py-6">
-                                  <span className={`text-[9px] font-bold px-3 py-1.5 rounded-full border whitespace-nowrap tracking-widest
-                                    ${guest.status === 'arrived' ? 'bg-white/10 border-white/20 text-white' : 'bg-transparent border-white/10 text-gray-500'}`}>
-                                    {badge.label.toUpperCase()}
-                                  </span>
-                                </td>
-                                {extraKeys.map(key => (
-                                  <td key={key} className="px-8 py-6 text-xs text-gray-400 whitespace-nowrap font-mono">
-                                    {guest.extraFields?.[key] ?? <span className="text-gray-800">—</span>}
-                                  </td>
-                                ))}
-                                <td className="px-8 py-6 text-[10px] text-gray-600 font-mono whitespace-nowrap uppercase tracking-tighter" suppressHydrationWarning>
-                                  {(() => {
-                                      const ca = guest.createdAt;
-                                      if (!ca) return 'Now';
-                                      try {
-                                        const date = typeof ca === 'object' && 'seconds' in (ca as any) ? new Date((ca as any).seconds * 1000) : new Date(ca);
-                                        return date.toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-                                      } catch { return 'Recent'; }
-                                  })()}
-                                </td>
-                                <td className="px-6 py-6 text-right flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0">
-                                  <button 
-                                    onClick={() => { setEditingGuest(guest); setShowEdit(true); }}
-                                    className="p-2.5 bg-white/5 hover:bg-luxury-gold text-gray-400 hover:text-white rounded-xl border border-white/5 transition-all duration-300"
-                                    title="Edit guest"
-                                  >
-                                    ✍️
-                                  </button>
-                                  <button 
-                                    onClick={() => handleDeleteGuest(guest.id, guest.name || 'this guest')} 
-                                    disabled={isDeleting}
-                                    className="p-2.5 bg-white/5 hover:bg-red-500/80 text-gray-400 hover:text-white rounded-xl border border-white/5 transition-all duration-300"
-                                    title="Delete guest"
-                                  >
-                                    🗑️
-                                  </button>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  );
-                })()}
-              </div>
+              {/* Guest list */}
+              <GuestList
+                guests={guests}
+                campaignName={selectedCampaign.name}
+                checkingIds={checkingIds}
+                onCheckIn={handleCheckIn}
+                onEdit={(g) => { setEditingGuest(g); setShowEdit(true); }}
+                onDelete={(g) => handleDeleteGuest(g.id, g.name || 'this guest')}
+                deleting={isDeleting}
+                onToast={showToast}
+              />
             </div>
           </>
         ) : (
@@ -749,7 +649,7 @@ function AdminDashboardContent() {
         <AddGuestModal 
           campaignId={selectedCampaign.id} 
           guests={guests}
-          onGuestAdded={(g: GuestData) => { setShowAdd(false); showToast('Guest added!', 'success'); }} 
+          onGuestAdded={(g: GuestData) => { setShowAdd(false); refreshGuests(); showToast('Guest added!', 'success'); }} 
           onClose={() => setShowAdd(false)} 
         />
       )}
@@ -758,6 +658,7 @@ function AdminDashboardContent() {
           campaignId={selectedCampaign.id}
           onImported={(newGuests) => {
             setShowImport(false);
+            refreshGuests();
             showToast(`${newGuests.length} guests imported!`, 'success');
           }}
           onClose={() => setShowImport(false)}
@@ -798,6 +699,7 @@ function AdminDashboardContent() {
               showToast(`Successfully dispatched ${success} invitations!`, 'success');
             }
             setShowEmailModal(false);
+            refreshGuests();
           }}
           onClose={() => setShowEmailModal(false)}
         />
@@ -806,10 +708,10 @@ function AdminDashboardContent() {
       {showEdit && editingGuest && (
         <EditGuestModal
           guest={editingGuest}
+          guests={guests}
           onGuestUpdated={(updated) => {
-            // Updated directly in Firestore, but let's refresh locally if needed
-            // Actually AdminDashboard has listeners or re-fetches
             setShowEdit(false);
+            refreshGuests();
             setEditingGuest(null);
             showToast('Registry updated!', 'success');
           }}

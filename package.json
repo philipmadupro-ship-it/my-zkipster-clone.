@@ -7,11 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "create-user": "node scripts/create-user.mjs",
     "test": "node --experimental-strip-types --no-warnings --test \"src/**/*.test.mts\""
   },
   "dependencies": {
-    "firebase": "^12.11.0",
     "firebase-admin": "^13.7.0",
     "html5-qrcode": "^2.3.8",
     "next": "16.2.1",

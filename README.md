@@ -1,109 +1,88 @@
 # my-zkipster-clone
 
-A full-stack event RSVP and ticketing app built with **Next.js**, **Firebase Firestore**, **Resend**, and **QR code generation**.
+An event guest-list, RSVP and check-in app built with **Next.js**, **Firebase Firestore** (as the database only), **Nodemailer** (Outlook / Microsoft 365 SMTP) and **QR codes**.
 
 ## Features
 
-- **Couture Dispatch**: Mass invitation system with **Wave-Based Batching** (100 per wave) to ensure SMTP reliability.
-- **Automated RSVP Confirmation**: Instant digital pass delivery with **embedded entry QR codes** sent directly to guest emails.
-- **Unified Guest Registry**: Full **Edit/Delete** capabilities for every guest profile, including portraits and seat assignments.
-- **Luxury Aesthetic**: Minimalist, branded RSVP and invitation views designed for high-society event management.
-- **Integrated Web Scanner**: In-app QR verification with real-time guest profile lookups.
-- **Outlook SMTP Integration**: Professional-grade email delivery via Microsoft 365 infrastructure.
+- **Guest list** (dashboard)
+  - Search by name, email, tag or note (accent-insensitive; every word must match). Filter by Arrived / Not arrived / Confirmed / Invited and by **tag**; sort by newest, name, arrival time or status.
+  - **Arrival column**: when each guest arrived and **who checked them in**, with Check in / Undo on every row.
+  - **Plus-ones sit under the guest who brought them**, with "+3 · 1/3 arrived" on the host and a "Plus-ones arrived" total.
+  - Select several guests and check them all in, or use **Check in whole party** on a host.
+  - **Notes** per guest (e.g. "seat near the front"), and **tags** beyond Standard/VIP (type any tag, with suggestions).
+  - **Export Excel**: the whole list with arrival time, who checked them in, plus-one of, tag and notes.
+  - Refreshes by itself every few seconds.
+- **Door mode** (`/door`, built for a phone): one big search box, big result cards with notes in a highlighted box, one-tap **CHECK IN**, **Check in whole party**, an UNDO bar after every check-in, a live "arrived / expected" counter, and a Scan QR button. If a guest is already checked in it says **when and by whom**, including when someone else checked them in a moment earlier.
+- **Couture Dispatch**: bulk invitation emails in batches of 100.
+- **RSVP + digital pass**: guests confirm from a signed link and get a QR pass by email.
+- **Hostess scanner**: scan a guest's QR code to check them in.
+- **Import / manual entry / edit / delete** for every guest, with portraits and categories.
+- **Branded RSVP and invitation pages**, in English or French.
 
-## Tech Stack
+## Tech stack
 
-- Frontend + Backend: Next.js 14 (App Router)
-- Database: Firebase Firestore (Admin SDK)
-- Email: Resend + React Email
-- QR Code: `qrcode`
+- Next.js 16 (App Router), React 19, Tailwind
+- Database: Firebase Firestore, accessed **only from the server** (Admin SDK)
+- Email: Nodemailer over SMTP (Outlook / Microsoft 365)
+- QR codes: `qrcode`, scanning with `html5-qrcode`
+- Login: a simple signed-cookie login (no external auth service)
 
-## Local Setup
-
-1. Install dependencies:
+## Local setup
 
 ```bash
 npm install
+cp .env.local.example .env.local   # then fill it in (see below)
+npm run dev                        # http://localhost:3000
 ```
 
-2. Create your local env file:
+Environment variables (see `.env.local.example` for the full list):
 
-```bash
-cp .env.local.example .env.local
-```
+| Variable | What it is |
+|---|---|
+| `ADMIN_LOGINS` | Who can sign in: JSON `{"email":"password"}` for 1 or 2 people |
+| `SESSION_SECRET` | 32+ characters, signs the login cookie (`openssl rand -base64 48`) |
+| `RSVP_LINK_SECRET` | 32+ characters, signs guest RSVP links (`openssl rand -base64 48`) |
+| `FIREBASE_SERVICE_ACCOUNT_JSON` *or* `FIREBASE_PROJECT_ID` / `FIREBASE_CLIENT_EMAIL` / `FIREBASE_PRIVATE_KEY` | Firebase Admin credentials (Project Settings → Service accounts → Generate new private key) |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `SMTP_SECURE` | Outlook SMTP |
+| `NEXT_PUBLIC_APP_URL` | The site's public address, used in emailed links |
 
-3. Fill `.env.local` with:
+The old `NEXT_PUBLIC_FIREBASE_*` and `ADMIN_EMAILS` variables are no longer used.
 
-```bash
-FIREBASE_PROJECT_ID=guest-lsi
-FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@guest-lsi.iam.gserviceaccount.com
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR_KEY_HERE\n-----END PRIVATE KEY-----\n"
+## Signing in
 
-RESEND_API_KEY=re_your_key_here
-FROM_EMAIL=philipmadupro@gmail.com
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
+- Sign-in is **email + password**. There is no sign-up page, no emailed link and no "forgot password".
+- The people allowed in, and their passwords, live in the **`ADMIN_LOGINS`** setting, e.g.
+  `{"press@ungaro.com":"a-long-password","second@ungaro.com":"another-long-one"}`.
+  To add someone, remove someone or change a password: edit it (Vercel → Settings → Environment
+  Variables) and redeploy. Removing someone ends their session on their next request.
+- Everyone listed sees the **same campaigns and guests** (it is meant for a small trusted team).
+- Passwords are stored as plain text in that setting, so use long ones and keep Vercel access limited.
+  Wrong-password attempts are rate-limited, but only per running server instance, so this slows
+  guessing down; it does not stop it.
+- The session is a signed, HttpOnly cookie that lasts 7 days. Changing `SESSION_SECRET` signs everyone out.
+- Firestore rules (`firestore.rules`) refuse **all** direct access, because only the server uses the
+  database. Deploy them with `firebase deploy --only firestore:rules` (or paste them into
+  Firebase Console → Firestore → Rules).
 
-4. Run the app:
+## RSVP links
 
-```bash
-npm run dev
-```
+- Invitation and reminder emails link to `/rsvp/<guestId>.<signature>` (HMAC-SHA256 with
+  `RSVP_LINK_SECRET`). The guest ID alone, which is also what the QR code holds, does not open an RSVP.
+- Links sent **before signing existed** are bare guest IDs and keep working until you set
+  `RSVP_ALLOW_LEGACY_LINKS=false`. Reminders go out with signed links, so re-send reminders first,
+  then flip the switch.
+- Rotating `RSVP_LINK_SECRET` invalidates every signed link already sent.
+- Public by design: the RSVP/invitation pages, the `/c/<slug>` claim page, `/api/lookup-guest` and
+  `/api/confirm-rsvp`. Everything else requires a login.
 
-5. Open [http://localhost:3000](http://localhost:3000)
+## Importing plus-ones, notes and tags
 
-## Firebase Credentials
+In a spreadsheet import, a column named like `parent`, `host`, `plus one` holds the host of a plus-one,
+written as the host's **email or name** (any order, accents and capitals don't matter; the host may
+be further down the file). A `notes` / `comment` / `remarque` column becomes the guest's note, and
+`tag` / `category` / `group` becomes their tag. Plus-ones whose host can't be found are kept as typed
+and linked automatically once a matching guest exists.
 
-From Firebase Console -> Project Settings -> Service Accounts -> Generate new private key (JSON):
+## Tests
 
-- `project_id` -> `FIREBASE_PROJECT_ID`
-- `client_email` -> `FIREBASE_CLIENT_EMAIL`
-- `private_key` -> `FIREBASE_PRIVATE_KEY`
-
-## Access control
-
-- **Login** is email + password, or Google. There is **no sign-up page** and no magic-link sign-in.
-  In Firebase Console → Authentication → Sign-in method, enable **Email/Password** and leave
-  **Email link (passwordless sign-in)** switched off.
-- **Creating a login (easiest):** Firebase Console → Authentication → Users → **Add user**, and
-  choose an email and password there. Accounts made this way start out "unverified"; the first time
-  that person signs in, the server marks the account verified **if the address is written out in full
-  in `ADMIN_EMAILS`** (e.g. `press@ungaro.com`). No email is sent and nothing needs running.
-  - A `@domain` entry in `ADMIN_EMAILS` does **not** auto-activate accounts, because anyone who
-    registers an address on that domain could then promote themselves. For those, use the script
-    below.
-  - Add the address to `ADMIN_EMAILS` only **after** its account exists. Until then, someone calling
-    Firebase's public sign-up endpoint directly could register that address first. If your Firebase
-    project offers it, also turn off sign-up under Authentication → Settings → User actions.
-- **Creating a login (script):** `npm run create-user -- someone@ungaro.com` prompts for a password
-  and creates the account already verified (or resets the password of an existing one). It needs the
-  Firebase Admin credentials in `.env.local`.
-- The API and Firestore rules only trust **verified** emails and the `ADMIN_EMAILS` list.
-- "Forgot password?" sends Firebase's reset email (from `noreply@<project>.firebaseapp.com`, check
-  spam). If it doesn't arrive, delete the user in the Console and add them again with a new password.
-- **Admin API routes** (campaigns, guests, imports, dispatch, reminders, check-in) require a signed-in
-  Firebase user. The dashboard sends the user's ID token and the server verifies it.
-- Set **`ADMIN_EMAILS`** to the people allowed in (full addresses and/or `@domain` entries). With it
-  unset, all admin requests are refused. Anyone can create a Firebase account, so this list is what
-  actually decides who can send email from your SMTP account.
-- Campaign-level actions (edit, delete, import, send) also require that the caller **owns** the
-  campaign; the owner is taken from the verified token, never from the request body.
-- Public routes, by design: the RSVP/invitation pages, `/c/<slug>` claim page, `/api/lookup-guest`
-  and `/api/confirm-rsvp`.
-- **RSVP links are signed.** Invitation and reminder emails link to `/rsvp/<guestId>.<signature>`
-  (HMAC-SHA256 with `RSVP_LINK_SECRET`; generate one with `openssl rand -base64 48`). The guest ID alone
-  no longer opens an RSVP, which matters because it is also what the QR code encodes. The server
-  recomputes the signature, so nothing extra is stored.
-  - Links sent **before** this change are bare guest IDs. They keep working until you set
-    `RSVP_ALLOW_LEGACY_LINKS=false`. Reminders go out with signed links, so re-send reminders first,
-    then flip the switch.
-  - Rotating `RSVP_LINK_SECRET` invalidates every signed link already sent.
-  - Run the token tests with `npm test`.
-- **Firestore rules** live in `firestore.rules`. Clients may only read their own campaigns and those
-  campaigns' guests; all writes go through the API. Deploy them with
-  `firebase deploy --only firestore:rules` (or paste them into Firebase Console → Firestore → Rules).
-
-## Notes
-
-- `FROM_EMAIL` must be a sender that Resend allows for your account/domain.
-- Guest records are stored in Firestore collection: `guests`.
+`npm test` runs the unit tests (login/session, RSVP links, guest-list logic, check-in rules, export).

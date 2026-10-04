@@ -27,6 +27,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       category: data.category ?? 'Standard',
       seatNumber: data.seatNumber ?? '—',
       arrivedAt: data.arrivedAt?.toDate?.()?.toISOString() ?? data.arrivedAt ?? null,
+      arrivedBy: data.arrivedBy ?? null,
+      notes: data.notes ?? '',
     });
   } catch (err) {
     return handleApiError(err, 'guest lookup');

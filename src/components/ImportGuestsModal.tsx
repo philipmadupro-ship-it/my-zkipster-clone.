@@ -12,6 +12,7 @@ interface ParsedRow {
   category?: string;
   portraitUrl?: string;
   parentId?: string;
+  notes?: string;
   [key: string]: string | undefined;
 }
 
@@ -75,6 +76,7 @@ export default function ImportGuestsModal({ campaignId, onImported, onClose }: P
         email: ['email', 'mail', 'courriel', 'e-mail', 'contact'],
         category: ['category', 'vip', 'type', 'status', 'group', 'tag', 'catégorie', 'catgorie'],
         portrait: ['portrait', 'image', 'photo', 'picture', 'avatar', 'url'],
+        notes: ['notes', 'note', 'comment', 'remark', 'remarque', 'commentaire'],
         plusOne: ['parent', 'plusone', 'plus-one', 'principal', 'host', 'associated']
       };
 
@@ -90,6 +92,7 @@ export default function ImportGuestsModal({ campaignId, onImported, onClose }: P
         email: findIdx(mappingDict.email),
         category: findIdx(mappingDict.category),
         portrait: findIdx(mappingDict.portrait),
+        notes: findIdx(mappingDict.notes),
         plusOne: findIdx(mappingDict.plusOne)
       };
 
@@ -121,6 +124,7 @@ export default function ImportGuestsModal({ campaignId, onImported, onClose }: P
         if (idxMap.email !== -1 && cols[idxMap.email]) row.email = String(cols[idxMap.email]).trim();
         if (idxMap.category !== -1 && cols[idxMap.category]) row.category = String(cols[idxMap.category]).trim();
         if (idxMap.portrait !== -1 && cols[idxMap.portrait]) row.portraitUrl = String(cols[idxMap.portrait]).trim();
+        if (idxMap.notes !== -1 && cols[idxMap.notes]) row.notes = String(cols[idxMap.notes]).trim();
         if (idxMap.plusOne !== -1 && cols[idxMap.plusOne]) row.parentId = String(cols[idxMap.plusOne]).trim();
 
         // Capture Extra Metadata for any columns not already mapped
@@ -137,7 +141,7 @@ export default function ImportGuestsModal({ campaignId, onImported, onClose }: P
       if (parsed.length === 0) {
         setError('Semantic analysis found zero valid records in the provided file.');
       } else {
-        const standardKeys = ['firstName', 'lastName', 'email', 'category', 'portraitUrl', 'parentId'];
+        const standardKeys = ['firstName', 'lastName', 'email', 'category', 'portraitUrl', 'parentId', 'notes'];
         const extraHeaders = Array.from(new Set(parsed.flatMap(r => Object.keys(r).filter(k => !standardKeys.includes(k)))));
         setHeaders(extraHeaders);
         setRows(parsed);

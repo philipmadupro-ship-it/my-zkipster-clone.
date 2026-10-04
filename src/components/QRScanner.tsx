@@ -12,6 +12,8 @@ interface ScanResult {
   category?: string;
   seatNumber?: string;
   arrivedAt?: string;
+  arrivedBy?: string | null;
+  notes?: string;
   error?: string;
 }
 
@@ -27,7 +29,7 @@ function extractGuestId(text: string): string | null {
   return null;
 }
 
-export default function QRScanner() {
+export default function QRScanner({ onCheckedIn }: { onCheckedIn?: () => void } = {}) {
   const [mode, setMode] = useState<'camera' | 'upload'>('camera');
   const [scanResult, setScanResult] = useState<ScanResult>({ status: null });
   const [checkingIn, setCheckingIn] = useState(false);
@@ -62,6 +64,8 @@ export default function QRScanner() {
         category: data.category,
         seatNumber: data.seatNumber,
         arrivedAt: data.arrivedAt,
+        arrivedBy: data.arrivedBy,
+        notes: data.notes,
       });
     } catch {
       setScanResult({ status: 'not_found', error: 'Network error' });
@@ -78,9 +82,22 @@ export default function QRScanner() {
         body: JSON.stringify({ guestId: currentGuestId }),
       });
       const data = await res.json();
+      if (res.status === 409 && data.error === 'Already checked in') {
+        // Someone else got there first: say when and by whom instead of failing.
+        const seconds = data.arrivedAt?.seconds;
+        setScanResult(prev => ({
+          ...prev,
+          status: 'arrived',
+          arrivedAt: seconds ? new Date(seconds * 1000).toISOString() : prev.arrivedAt,
+          arrivedBy: data.arrivedBy ?? prev.arrivedBy,
+        }));
+        onCheckedIn?.();
+        return;
+      }
       if (!res.ok) throw new Error(data.error);
       setScanResult(prev => ({ ...prev, status: 'arrived' }));
       setCheckedIn(true);
+      onCheckedIn?.();
     } catch (err) {
       setScanResult(prev => ({ ...prev, error: err instanceof Error ? err.message : 'Check-in failed' }));
     } finally {
@@ -133,6 +150,13 @@ export default function QRScanner() {
   }
 
 
+
+  const notesBox = scanResult.notes ? (
+    <div className="rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-left text-sm text-amber-900">
+      <span aria-hidden="true">📝 </span>
+      {scanResult.notes}
+    </div>
+  ) : null;
 
   return (
     <div className="space-y-6">
@@ -210,6 +234,8 @@ export default function QRScanner() {
                 </div>
               </div>
 
+              {notesBox}
+
               <button
                 onClick={handleCheckIn}
                 disabled={checkingIn}
@@ -234,11 +260,16 @@ export default function QRScanner() {
                   )}
               </div>
               <div className="space-y-1">
-                <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-[0.3em]">Arrived & Verified</p>
+                {checkedIn ? (
+                  <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-[0.3em]">Arrived & Verified</p>
+                ) : (
+                  <p className="text-[11px] font-bold text-amber-600 uppercase tracking-[0.3em]">⚠ Already checked in</p>
+                )}
                 <p className="text-2xl font-cormorant text-luxury-dark uppercase tracking-widest">{scanResult.name}</p>
                 {scanResult.arrivedAt && (
                   <p className="text-[10px] text-luxury-muted uppercase tracking-widest mt-2">
                     Entry at {new Date(scanResult.arrivedAt).toLocaleTimeString()}
+                    {scanResult.arrivedBy ? ` · by ${scanResult.arrivedBy.split('@')[0]}` : ''}
                   </p>
                 )}
               </div>

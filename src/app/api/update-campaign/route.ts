@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
-import { requireAdmin, getOwnedCampaign, handleApiError } from '@/lib/auth';
+import { requireAdmin, getCampaign, handleApiError } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +10,7 @@ const LANGUAGES = ['en', 'fr'];
 // Saves the email branding settings edited in the Couture Dispatch modal.
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireAdmin(req);
+    await requireAdmin(req);
     const { campaignId, language, logoVariant, emailImageUrl, emailMessage } = await req.json();
 
     if (!campaignId || typeof campaignId !== 'string') {
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     }
 
     const db = getAdminDb();
-    await getOwnedCampaign(db, campaignId, user);
+    await getCampaign(db, campaignId);
 
     await db.collection('campaigns').doc(campaignId).update({
       language,

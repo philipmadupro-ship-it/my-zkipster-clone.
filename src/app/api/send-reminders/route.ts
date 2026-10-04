@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
 import QRCode from 'qrcode';
-import { requireAdmin, getOwnedCampaign, handleApiError } from '@/lib/auth';
+import { requireAdmin, getCampaign, handleApiError } from '@/lib/auth';
 import { createMailTransport, escapeHtml, getBaseUrl, safeImageUrl } from '@/lib/email';
 import { requireRsvpSecret, signGuestToken } from '@/lib/rsvp-token';
 
@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireAdmin(req);
+    await requireAdmin(req);
     const { campaignId, origin } = await req.json();
 
     if (!campaignId) {
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     const db = getAdminDb();
 
     // 1. Fetch Campaign Details (and confirm the caller owns it)
-    const { data: campaign } = await getOwnedCampaign(db, String(campaignId), user);
+    const { data: campaign } = await getCampaign(db, String(campaignId));
 
     // 2. Fetch Guests
     const guestsSnapshot = await db.collection('guests').where('campaignId', '==', campaignId).get();

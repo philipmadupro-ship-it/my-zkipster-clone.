@@ -3,19 +3,29 @@
 import { useState } from 'react';
 import { authedFetch } from '@/lib/api-client';
 import { type GuestData } from './AddGuestModal';
+import { DEFAULT_TAGS, MAX_NOTES_LENGTH, MAX_TAG_LENGTH } from '@/lib/guest-fields';
+import { displayName, resolveHosts } from '@/lib/guest-list';
 
 interface Props {
   guest: GuestData;
+  /** The campaign's guests, used for tag suggestions and the "plus-one of" list. */
+  guests?: GuestData[];
   onGuestUpdated: (updated: GuestData) => void;
   onClose: () => void;
 }
 
-export default function EditGuestModal({ guest, onGuestUpdated, onClose }: Props) {
+export default function EditGuestModal({ guest, guests = [], onGuestUpdated, onClose }: Props) {
   const [firstName, setFirstName] = useState(guest.firstName || '');
   const [lastName, setLastName] = useState(guest.lastName || '');
   const [email, setEmail] = useState(guest.email || '');
   const [category, setCategory] = useState(guest.category || 'Standard');
   const [portraitUrl, setPortraitUrl] = useState(guest.portraitUrl || '');
+  const [notes, setNotes] = useState(guest.notes || '');
+  // The host this guest is a plus-one of (older imports stored a name, so work out the real guest).
+  const initialParent = resolveHosts([guest, ...guests.filter((g) => g.id !== guest.id)]).get(guest.id)?.id ?? '';
+  const [parentId, setParentId] = useState(initialParent);
+  const tagSuggestions = Array.from(new Set([...DEFAULT_TAGS, ...guests.map((g) => g.category).filter((t): t is string => !!t)]));
+  const hostChoices = guests.filter((g) => g.id !== guest.id && g.parentId !== guest.id);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -35,6 +45,9 @@ export default function EditGuestModal({ guest, onGuestUpdated, onClose }: Props
           email,
           category,
           portraitUrl,
+          notes,
+          // Only sent when changed, so an unlinked older plus-one isn't wiped by an unrelated edit.
+          ...(parentId !== initialParent ? { parentId } : {}),
         }),
       });
 
@@ -48,6 +61,8 @@ export default function EditGuestModal({ guest, onGuestUpdated, onClose }: Props
         email,
         category,
         portraitUrl,
+        notes,
+        ...(parentId !== initialParent ? { parentId } : {}),
       });
       onClose();
     } catch (err) {
@@ -118,19 +133,19 @@ export default function EditGuestModal({ guest, onGuestUpdated, onClose }: Props
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-[9px] uppercase tracking-widest font-bold text-gray-500">Category</label>
-              <select
+              <label className="text-[9px] uppercase tracking-widest font-bold text-gray-500">Tag</label>
+              <input
+                list="guest-tags"
+                type="text"
+                maxLength={MAX_TAG_LENGTH}
                 value={category}
-                onChange={e => setCategory(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-white/30 transition-colors appearance-none cursor-pointer"
-              >
-                <option value="Standard" className="bg-[#111] text-white">Standard</option>
-                <option value="VIP" className="bg-[#111] text-white">VIP</option>
-                <option value="Press" className="bg-[#111] text-white">Press</option>
-                <option value="Influencer" className="bg-[#111] text-white">Influencer</option>
-                <option value="Buyer" className="bg-[#111] text-white">Buyer</option>
-                <option value="Staff" className="bg-[#111] text-white">Staff</option>
-              </select>
+                onChange={(e) => setCategory(e.target.value)}
+                placeholder="Standard"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-white/30 transition-colors placeholder:text-gray-700"
+              />
+              <datalist id="guest-tags">
+                {tagSuggestions.map((t) => <option key={t} value={t} />)}
+              </datalist>
             </div>
             <div className="space-y-1">
               <label className="text-[9px] uppercase tracking-widest font-bold text-gray-500">Portrait URL</label>
@@ -143,6 +158,33 @@ export default function EditGuestModal({ guest, onGuestUpdated, onClose }: Props
               />
             </div>
           </div>
+
+          <div className="space-y-1">
+            <label className="text-[9px] uppercase tracking-widest font-bold text-gray-500">Plus-one of</label>
+            <select
+              value={parentId}
+              onChange={e => setParentId(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-white/30 transition-colors appearance-none cursor-pointer"
+            >
+              <option value="" className="bg-[#111] text-gray-500">None</option>
+              {hostChoices.map(g => (
+                <option key={g.id} value={g.id} className="bg-[#111] text-white">{displayName(g)}</option>
+              ))}
+            </select>
+          </div>
+
+            {/* Notes - shown at the door */}
+            <div className="space-y-1">
+              <label className="text-[9px] uppercase tracking-widest font-bold text-gray-500">Notes <span className="text-gray-700">(shown at the door)</span></label>
+              <textarea
+                rows={2}
+                maxLength={MAX_NOTES_LENGTH}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="e.g. seat near the front"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-white/30 transition-colors placeholder:text-gray-700 resize-none"
+              />
+            </div>
         </div>
 
         {/* Buttons - ALWAYS pinned at bottom */}
