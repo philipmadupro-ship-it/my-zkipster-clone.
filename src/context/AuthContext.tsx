@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { onIdTokenChanged, User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 
 interface AuthContextType {
@@ -16,7 +16,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    // onIdTokenChanged (not onAuthStateChanged) so the app notices when an account
+    // becomes verified: the login page refreshes the token after activation.
+    const unsubscribe = onIdTokenChanged(auth, (firebaseUser) => {
       // The server and Firestore rules only trust verified emails, so an
       // email/password account that hasn't verified yet counts as signed out.
       setUser(firebaseUser?.emailVerified ? firebaseUser : null);

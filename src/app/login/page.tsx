@@ -90,11 +90,21 @@ export default function LoginPage() {
 
       const cred = await signInWithEmailAndPassword(auth, address, password);
       if (!cred.user.emailVerified) {
-        // Accounts are created by the administrator (already verified). An
-        // unverified one can't use the app, so don't leave it signed in.
-        await signOut(auth);
-        setError('This account has not been activated. Please contact the administrator.');
-        return;
+        // Logins created by hand in the Firebase Console start out unverified. The
+        // server activates them if the address is named in ADMIN_EMAILS.
+        const res = await fetch('/api/activate-account', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${await cred.user.getIdToken()}` },
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          await signOut(auth);
+          setError(data.error || 'This account has not been activated. Please contact the administrator.');
+          return;
+        }
+        // Pick up the verified flag and a fresh token so the API and Firestore accept us.
+        await cred.user.reload();
+        await cred.user.getIdToken(true);
       }
       router.push('/');
     } catch (err) {

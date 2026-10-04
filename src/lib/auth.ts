@@ -3,6 +3,7 @@ import { getAuth } from 'firebase-admin/auth';
 import type { Firestore } from 'firebase-admin/firestore';
 import { getAdminApp } from '@/lib/firebase-admin';
 import { RsvpConfigError } from '@/lib/rsvp-token';
+import { isAllowlistConfigured, isAllowlisted } from '@/lib/admin-allowlist';
 
 /** An error that should be returned to the caller with a specific HTTP status. */
 export class ApiError extends Error {
@@ -17,22 +18,12 @@ export interface AdminUser {
   email: string;
 }
 
-/**
- * ADMIN_EMAILS is a comma-separated allowlist. Entries are either a full
- * address (`press@ungaro.com`) or a whole domain (`@ungaro.com`).
- */
-function isAllowlisted(email: string): boolean {
-  const entries = (process.env.ADMIN_EMAILS ?? '')
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-
-  if (entries.length === 0) {
+/** Throws a 503 when ADMIN_EMAILS is unset, so every admin request is refused. */
+export function requireAllowlistConfigured(): void {
+  if (!isAllowlistConfigured()) {
     console.error('[auth] ADMIN_EMAILS is not set; refusing all admin API requests.');
     throw new ApiError(503, 'Admin access is not configured on this server.');
   }
-
-  return entries.some((entry) => (entry.startsWith('@') ? email.endsWith(entry) : email === entry));
 }
 
 /**
@@ -55,6 +46,7 @@ export async function requireAdmin(req: NextRequest): Promise<AdminUser> {
   }
 
   const email = decoded.email.toLowerCase();
+  requireAllowlistConfigured();
   if (!isAllowlisted(email)) {
     throw new ApiError(403, 'This account is not authorised to manage events.');
   }
