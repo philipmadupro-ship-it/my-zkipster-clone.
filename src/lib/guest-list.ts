@@ -101,10 +101,10 @@ export function tagHue(tag: string): number {
  * (a name or an email), so this also matches on email and on full name.
  * Returns child id -> top-level host.
  */
-export function resolveHosts(guests: GuestRecord[]): Map<string, GuestRecord> {
+export function resolveHosts<T extends GuestRecord>(guests: T[]): Map<string, T> {
   const byId = new Map(guests.map((g) => [g.id, g]));
-  const byEmail = new Map<string, GuestRecord>();
-  const byName = new Map<string, GuestRecord>();
+  const byEmail = new Map<string, T>();
+  const byName = new Map<string, T>();
   for (const g of guests) {
     if (g.email) byEmail.set(normalizeText(g.email).trim(), g);
     const full = normalizeText(displayName(g)).replace(/\s+/g, ' ').trim();
@@ -113,14 +113,14 @@ export function resolveHosts(guests: GuestRecord[]): Map<string, GuestRecord> {
     if (reversed && !byName.has(reversed)) byName.set(reversed, g);
   }
 
-  const directParent = (g: GuestRecord): GuestRecord | undefined => {
+  const directParent = (g: T): T | undefined => {
     const ref = (g.parentId ?? '').trim();
     if (!ref) return undefined;
     const found = byId.get(ref) ?? byEmail.get(normalizeText(ref).trim()) ?? byName.get(normalizeText(ref).replace(/\s+/g, ' ').trim());
     return found && found.id !== g.id ? found : undefined;
   };
 
-  const hosts = new Map<string, GuestRecord>();
+  const hosts = new Map<string, T>();
   for (const g of guests) {
     let host = directParent(g);
     if (!host) continue;
@@ -154,12 +154,12 @@ export interface ListOptions {
   sort: SortKey;
 }
 
-export interface ListRow {
-  guest: GuestRecord;
+export interface ListRow<T extends GuestRecord = GuestRecord> {
+  guest: T;
   /** 0 for a guest, 1 for a plus-one shown under their host. */
   depth: 0 | 1;
   /** The host, for plus-ones. */
-  host: GuestRecord | null;
+  host: T | null;
   /** Shown only so a matching plus-one has its host above it; doesn't match the search itself. */
   context: boolean;
   /**
@@ -213,11 +213,11 @@ function searchText(g: GuestRecord, host: GuestRecord | undefined): string {
  * each plus-one directly under their host. A plus-one whose host doesn't match
  * still shows, with the host above it dimmed ("context").
  */
-export function buildRows(guests: GuestRecord[], options: ListOptions): { rows: ListRow[]; shown: number } {
+export function buildRows<T extends GuestRecord>(guests: T[], options: ListOptions): { rows: ListRow<T>[]; shown: number } {
   const hosts = resolveHosts(guests);
   const terms = normalizeText(options.query).split(/\s+/).filter(Boolean);
 
-  const matches = (g: GuestRecord): boolean => {
+  const matches = (g: T): boolean => {
     if (!matchesStatus(g.status, options.status)) return false;
     if (options.tag !== 'all' && tagKey(tagOf(g)) !== options.tag) return false;
     if (terms.length === 0) return true;
@@ -225,7 +225,7 @@ export function buildRows(guests: GuestRecord[], options: ListOptions): { rows: 
     return terms.every((t) => text.includes(t));
   };
 
-  const kidsOf = new Map<string, GuestRecord[]>();
+  const kidsOf = new Map<string, T[]>();
   for (const g of guests) {
     const host = hosts.get(g.id);
     if (host) kidsOf.set(host.id, [...(kidsOf.get(host.id) ?? []), g]);
@@ -235,7 +235,7 @@ export function buildRows(guests: GuestRecord[], options: ListOptions): { rows: 
 
   const leaders = guests.filter((g) => !hosts.has(g.id)).sort(compareBy(options.sort));
 
-  const rows: ListRow[] = [];
+  const rows: ListRow<T>[] = [];
   let shown = 0;
   for (const leader of leaders) {
     const kids = kidsOf.get(leader.id) ?? [];
@@ -288,7 +288,7 @@ export function plusOneStats(guests: GuestRecord[]): { total: number; arrived: n
 }
 
 /** Guests who have arrived, most recent first. */
-export function recentArrivals(guests: GuestRecord[], limit: number): GuestRecord[] {
+export function recentArrivals<T extends GuestRecord>(guests: T[], limit: number): T[] {
   return guests
     .filter((g) => isArrived(g))
     .sort((a, b) => (toMs(b.arrivedAt) ?? 0) - (toMs(a.arrivedAt) ?? 0))
@@ -304,20 +304,20 @@ export function pendingPartyIds(host: GuestRecord, guests: GuestRecord[]): strin
 // ---- optimistic update ----------------------------------------------------
 
 /** What the list should look like straight after a check-in/undo, before the server confirms. */
-export function applyCheckInLocally(
-  guests: GuestRecord[],
+export function applyCheckInLocally<T extends GuestRecord>(
+  guests: T[],
   ids: string[],
   undo: boolean,
   by: string,
   nowMs: number = Date.now(),
-): GuestRecord[] {
+): T[] {
   const wanted = new Set(ids);
   return guests.map((g) => {
     if (!wanted.has(g.id)) return g;
     if (undo) {
-      return isArrived(g) ? { ...g, status: g.confirmedAt ? 'confirmed' : 'invited', arrivedAt: null, arrivedBy: null } : g;
+      return isArrived(g) ? ({ ...g, status: g.confirmedAt ? 'confirmed' : 'invited', arrivedAt: null, arrivedBy: null } as T) : g;
     }
-    return isArrived(g) ? g : { ...g, status: 'arrived', arrivedAt: { seconds: Math.floor(nowMs / 1000), nanoseconds: 0 }, arrivedBy: by };
+    return isArrived(g) ? g : ({ ...g, status: 'arrived', arrivedAt: { seconds: Math.floor(nowMs / 1000), nanoseconds: 0 }, arrivedBy: by } as T);
   });
 }
 

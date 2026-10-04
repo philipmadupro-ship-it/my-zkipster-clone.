@@ -4,7 +4,15 @@ An event guest-list, RSVP and check-in app built with **Next.js**, **Firebase Fi
 
 ## Features
 
-- **Guest list**: search by name, email or category (accent-insensitive), filter by Arrived / Not arrived / Confirmed / Invited, see who has arrived and when, and check guests in (or undo) by hand. The list refreshes every few seconds.
+- **Guest list** (dashboard)
+  - Search by name, email, tag or note (accent-insensitive; every word must match). Filter by Arrived / Not arrived / Confirmed / Invited and by **tag**; sort by newest, name, arrival time or status.
+  - **Arrival column**: when each guest arrived and **who checked them in**, with Check in / Undo on every row.
+  - **Plus-ones sit under the guest who brought them**, with "+3 · 1/3 arrived" on the host and a "Plus-ones arrived" total.
+  - Select several guests and check them all in, or use **Check in whole party** on a host.
+  - **Notes** per guest (e.g. "seat near the front"), and **tags** beyond Standard/VIP (type any tag, with suggestions).
+  - **Export Excel**: the whole list with arrival time, who checked them in, plus-one of, tag and notes.
+  - Refreshes by itself every few seconds.
+- **Door mode** (`/door`, built for a phone): one big search box, big result cards with notes in a highlighted box, one-tap **CHECK IN**, **Check in whole party**, an UNDO bar after every check-in, a live "arrived / expected" counter, and a Scan QR button. If a guest is already checked in it says **when and by whom**, including when someone else checked them in a moment earlier.
 - **Couture Dispatch**: bulk invitation emails in batches of 100.
 - **RSVP + digital pass**: guests confirm from a signed link and get a QR pass by email.
 - **Hostess scanner**: scan a guest's QR code to check them in.
@@ -67,6 +75,14 @@ The old `NEXT_PUBLIC_FIREBASE_*` and `ADMIN_EMAILS` variables are no longer used
 - Public by design: the RSVP/invitation pages, the `/c/<slug>` claim page, `/api/lookup-guest` and
   `/api/confirm-rsvp`. Everything else requires a login.
 
+## Importing plus-ones, notes and tags
+
+In a spreadsheet import, a column named like `parent`, `host`, `plus one` holds the host of a plus-one,
+written as the host's **email or name** (any order, accents and capitals don't matter; the host may
+be further down the file). A `notes` / `comment` / `remarque` column becomes the guest's note, and
+`tag` / `category` / `group` becomes their tag. Plus-ones whose host can't be found are kept as typed
+and linked automatically once a matching guest exists.
+
 ## Tests
 
-`npm test` runs the unit tests for the login/session and RSVP-link code (Node's built-in test runner).
+`npm test` runs the unit tests (login/session, RSVP links, guest-list logic, check-in rules, export).
