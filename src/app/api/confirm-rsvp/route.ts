@@ -3,17 +3,26 @@ import { getAdminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import QRCode from 'qrcode';
 import { createMailTransport, escapeHtml, getBaseUrl, safeImageUrl } from '@/lib/email';
+import { resolveGuestId } from '@/lib/rsvp-token';
+import { handleApiError } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-// Public endpoint: guests confirm from the link in their invitation email.
+// Public endpoint: guests confirm from the signed link in their invitation email.
 export async function POST(req: NextRequest) {
   try {
-    const { guestId, name } = await req.json();
+    // `guestId` is the pre-signing field name, still sent by pages cached before the upgrade;
+    // resolveGuestId only accepts a bare ID while RSVP_ALLOW_LEGACY_LINKS isn't 'false'.
+    const { token, guestId: legacyGuestId, name } = await req.json();
 
     const cleanName = typeof name === 'string' ? name.trim().slice(0, 120) : '';
-    if (!guestId || typeof guestId !== 'string' || !cleanName) {
-      return NextResponse.json({ error: 'guestId and name are required' }, { status: 400 });
+    if (!cleanName || (typeof token !== 'string' && typeof legacyGuestId !== 'string')) {
+      return NextResponse.json({ error: 'token and name are required' }, { status: 400 });
+    }
+
+    const guestId = resolveGuestId(token ?? legacyGuestId);
+    if (!guestId) {
+      return NextResponse.json({ error: 'This invitation link is not valid.' }, { status: 404 });
     }
 
     const db = getAdminDb();
@@ -149,7 +158,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, qrCodeUrl: data.qrCodeUrl });
   } catch (err) {
-    console.error('confirm-rsvp error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(err, 'confirm-rsvp');
   }
 }

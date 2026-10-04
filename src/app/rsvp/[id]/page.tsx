@@ -1,13 +1,18 @@
 import { getAdminDb } from '@/lib/firebase-admin';
 import { notFound } from 'next/navigation';
 import LuxuryRSVPClient from '@/components/LuxuryRSVPClient';
+import { tryResolveGuestId } from '@/lib/rsvp-token';
 
 interface Props {
+  // Despite the folder name, this is the signed token (`<guestId>.<signature>`), not a bare guest ID.
   params: Promise<{ id: string }>;
 }
 
 export default async function RSVPPage({ params }: Props) {
-  const { id } = await params;
+  const { id: token } = await params;
+  const id = tryResolveGuestId(token);
+  if (!id) notFound();
+
   const db = getAdminDb();
   
   let guest = null;
@@ -51,5 +56,5 @@ export default async function RSVPPage({ params }: Props) {
 
   if (!guest) notFound();
 
-  return <LuxuryRSVPClient guest={guest} campaign={campaign} />;
+  return <LuxuryRSVPClient guest={guest} campaign={campaign} token={token} />;
 }

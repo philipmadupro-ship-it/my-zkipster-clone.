@@ -3,6 +3,7 @@ import { getAdminDb } from '@/lib/firebase-admin';
 import QRCode from 'qrcode';
 import { requireAdmin, getOwnedCampaign, handleApiError } from '@/lib/auth';
 import { createMailTransport, escapeHtml, getBaseUrl, safeImageUrl } from '@/lib/email';
+import { requireRsvpSecret, signGuestToken } from '@/lib/rsvp-token';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,8 +20,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email service not configured on host.' }, { status: 500 });
     }
 
+    // Fail before sending anything rather than emailing links we can't sign.
+    requireRsvpSecret();
+
     const db = getAdminDb();
-    
+
     // 1. Fetch Campaign Details (and confirm the caller owns it)
     const { data: campaign } = await getOwnedCampaign(db, String(campaignId), user);
 
@@ -77,7 +81,7 @@ export async function POST(req: NextRequest) {
       try {
         if (guest.status === 'pending' || guest.status === 'invited') {
           // --- SEND PENDING REMINDER ---
-          const rsvpLink = `${host}/rsvp/${guest.id}`;
+          const rsvpLink = `${host}/rsvp/${signGuestToken(guest.id)}`;
           const greeting = isFr ? 'Cher/Chère' : 'Dear';
           const viewInviteText = isFr ? 'Accéder à l\'Invitation Numérique' : 'Access Digital Invitation';
           

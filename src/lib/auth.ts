@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
 import type { Firestore } from 'firebase-admin/firestore';
 import { getAdminApp } from '@/lib/firebase-admin';
+import { RsvpConfigError } from '@/lib/rsvp-token';
 
 /** An error that should be returned to the caller with a specific HTTP status. */
 export class ApiError extends Error {
@@ -84,7 +85,7 @@ export async function getOwnedGuest(db: Firestore, guestId: string, user: AdminU
 }
 
 export function handleApiError(err: unknown, label: string): NextResponse {
-  if (err instanceof ApiError) {
+  if (err instanceof ApiError || err instanceof RsvpConfigError) {
     return NextResponse.json({ error: err.message }, { status: err.status });
   }
   console.error(`${label} error:`, err);

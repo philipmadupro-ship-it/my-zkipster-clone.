@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
 import { requireAdmin, getOwnedCampaign, handleApiError } from '@/lib/auth';
 import { createMailTransport, escapeHtml, getBaseUrl, safeImageUrl } from '@/lib/email';
+import { requireRsvpSecret, signGuestToken } from '@/lib/rsvp-token';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +28,9 @@ export async function POST(req: NextRequest) {
     if (guestIds.length > MAX_GUESTS_PER_REQUEST) {
       return NextResponse.json({ error: `Send at most ${MAX_GUESTS_PER_REQUEST} guests per request.` }, { status: 400 });
     }
+
+    // Fail before sending anything rather than emailing links we can't sign.
+    requireRsvpSecret();
 
     const db = getAdminDb();
 
@@ -55,7 +59,7 @@ export async function POST(req: NextRequest) {
         }
         const guest = guestDoc.data()!;
 
-        const rsvpLink = `${host}/rsvp/${guestId}`;
+        const rsvpLink = `${host}/rsvp/${signGuestToken(guestDoc.id)}`;
         
         const isDark = campaign.logoVariant === 'white' || campaign.logoVariant === 'img-white';
         const bgColor = isDark ? '#050505' : '#ffffff';
