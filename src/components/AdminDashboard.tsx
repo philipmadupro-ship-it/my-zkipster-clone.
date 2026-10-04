@@ -1,12 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, Component } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, Component } from 'react';
 import { authedFetch } from '@/lib/api-client';
 import { useRouter } from 'next/navigation';
 import UngaroLogo from './UngaroLogo';
-import { signOut } from 'firebase/auth';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import dynamic from 'next/dynamic';
 import { type GuestData } from './AddGuestModal';
@@ -73,6 +70,52 @@ const STATUS_BADGE: Record<string, { label: string; className: string }> = {
   refused: { label: 'Refused', className: 'bg-red-500/20 text-red-300 border-red-600' },
 };
 
+// ---- Guest list: filters, search and time helpers ------------------------
+type StatusFilter = 'all' | 'arrived' | 'notArrived' | 'confirmed' | 'invited';
+
+const FILTERS: { key: StatusFilter; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'arrived', label: 'Arrived' },
+  { key: 'notArrived', label: 'Not arrived' },
+  { key: 'confirmed', label: 'Confirmed' },
+  { key: 'invited', label: 'Invited' },
+];
+
+function matchesFilter(status: string, filter: StatusFilter): boolean {
+  switch (filter) {
+    case 'arrived': return status === 'arrived';
+    case 'notArrived': return status !== 'arrived';
+    case 'confirmed': return status === 'confirmed' || status === 'accepted';
+    case 'invited': return status === 'invited' || status === 'pending';
+    default: return true;
+  }
+}
+
+// Lower-case and strip accents, so "elodie" finds "Élodie".
+function normalizeText(value: unknown): string {
+  return String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+// Timestamps arrive as { seconds, nanoseconds } (or an ISO string for brand-new records).
+function toDate(value: any): Date | null {
+  if (!value) return null;
+  const date = typeof value === 'object' && 'seconds' in value ? new Date(value.seconds * 1000) : new Date(value);
+  return isNaN(date.getTime()) ? null : date;
+}
+
+function formatArrival(value: any): string {
+  const date = toDate(value);
+  if (!date) return '—';
+  const sameDay = date.toDateString() === new Date().toDateString();
+  return sameDay
+    ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : date.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function guestSearchText(g: GuestData): string {
+  return normalizeText([g.name, g.firstName, g.lastName, g.email, g.category, ...Object.values(g.extraFields ?? {})].join(' '));
+}
+
 export default function AdminDashboard() {
   return (
     <ErrorBoundary>
@@ -82,7 +125,7 @@ export default function AdminDashboard() {
 }
 
 function AdminDashboardContent() {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const router = useRouter();
   
   const [campaigns, setCampaigns] = useState<CampaignData[]>([]);
@@ -122,83 +165,136 @@ function AdminDashboardContent() {
     if (!loading && !user) router.push('/login');
   }, [user, loading, router]);
 
-  // Realtime Firestore listener for CAMPAIGNS
-  useEffect(() => {
-    if (!user?.email) return;
+  // Guest-list controls
+  const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [checkingInId, setCheckingInId] = useState<string | null>(null);
 
-    const email = user.email.toLowerCase().trim();
-    console.log('[Dashboard] Subscribing to campaigns for:', email);
-    
-    const q = query(
-      collection(db, 'campaigns'),
-      where('ownerEmail', '==', email)
-    );
-    const unsubscribe = onSnapshot(q, (snap) => {
-      const data = snap.docs.map(d => ({ ...(d.data() as Omit<CampaignData, 'id'>), id: d.id }));
-      // Stable client-side sort: newest first
-      data.sort((a: any, b: any) => {
-          const timeA = a.createdAt?.toMillis?.() || (a.createdAt instanceof Date ? a.createdAt.getTime() : 0);
-          const timeB = b.createdAt?.toMillis?.() || (b.createdAt instanceof Date ? b.createdAt.getTime() : 0);
-          return timeB - timeA;
-      });
-      console.log('[Dashboard] Campaigns update:', data.length);
-      setCampaigns(data);
-      
-      // Auto-select first campaign if none selected
-      if (data.length > 0 && !selectedCampaign) {
-          setSelectedCampaign(data[0]); 
+  // Bumping this reloads the lists straight away (after adding, deleting, checking in...).
+  const [refreshTick, setRefreshTick] = useState(0);
+  const refresh = useCallback(() => setRefreshTick(t => t + 1), []);
+
+  // Keeps the campaign list fresh: polls every few seconds while the tab is visible.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const res = await authedFetch('/api/campaigns');
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.error || `Request failed (${res.status})`);
+        if (cancelled) return;
+        const data: CampaignData[] = body.campaigns;
+        setCampaigns(data);
+        // Keep the open campaign in sync with its latest copy, or open the first one.
+        setSelectedCampaign(prev => {
+          if (!prev) return data[0] ?? null;
+          const latest = data.find(c => c.id === prev.id);
+          return latest && JSON.stringify(latest) !== JSON.stringify(prev) ? latest : prev;
+        });
+        setDbError(null);
+      } catch (err) {
+        if (!cancelled) setDbError(`Could not load campaigns: ${err instanceof Error ? err.message : String(err)}`);
       }
-      setDbError(null);
-    }, (err) => {
-      console.error('[Dashboard] Campaigns error:', err);
-      setDbError(`Firebase Error (Campaigns): ${err.message}`);
-    });
-    return () => unsubscribe();
-  }, [user?.email]);
-
-  // Realtime Firestore listener for GUESTS
-  useEffect(() => {
-    if (!user?.email || !selectedCampaign?.id) {
-        setGuests([]);
-        return;
     }
 
-    // Prevent 'ghosting' by clearing guest data immediately on campaign change
+    const onVisible = () => { if (document.visibilityState === 'visible') load(); };
+    load();
+    const timer = setInterval(onVisible, 5000);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [user, refreshTick]);
+
+  // Clear the previous campaign's guests the moment another one is opened.
+  const selectedCampaignId = selectedCampaign?.id;
+  useEffect(() => {
     setGuests([]);
+  }, [selectedCampaignId]);
 
-    const email = user.email.toLowerCase().trim();
-    console.log('[Dashboard] Subscribing to guests for campaign:', selectedCampaign.id, 'user:', email);
-    
-    // REMOVED ownerEmail where to avoid composite index requirements
-    // campaignId is unique enough to fetch guests securely
-    const q = query(
-      collection(db, 'guests'),
-      where('campaignId', '==', selectedCampaign.id)
-    );
+  // Keeps the guest list fresh (a little faster, since this is what the door team watches).
+  useEffect(() => {
+    if (!user || !selectedCampaignId) return;
+    let cancelled = false;
 
-    const unsubscribe = onSnapshot(q, (snap) => {
-      const data = snap.docs.map(d => ({ ...(d.data() as any), id: d.id })) as GuestData[];
-      
-      // Client-side sort: newest first
-      data.sort((a, b) => {
-        const timeA = (a.createdAt as any)?.seconds || 0;
-        const timeB = (b.createdAt as any)?.seconds || 0;
-        return timeB - timeA;
-      });
+    async function load() {
+      try {
+        const res = await authedFetch(`/api/guests?campaignId=${encodeURIComponent(selectedCampaignId as string)}`);
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.error || `Request failed (${res.status})`);
+        if (cancelled) return;
+        setGuests(body.guests as GuestData[]);
+        setDbError(null);
+      } catch (err) {
+        if (!cancelled) setDbError(`Could not load guests: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
 
-      console.log('[Dashboard] Guests update for:', selectedCampaign.name, data.length);
-      setGuests(data);
-    }, (err) => {
-      console.error('[Dashboard] Guests error:', err);
-      setDbError(`Firebase Error (Guests): ${err.message}`);
+    const onVisible = () => { if (document.visibilityState === 'visible') load(); };
+    load();
+    const timer = setInterval(onVisible, 4000);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [user, selectedCampaignId, refreshTick]);
+
+  // Search + filter. Every word typed must appear somewhere in the guest's details.
+  const filterCounts = useMemo(() => {
+    const counts = {} as Record<StatusFilter, number>;
+    for (const f of FILTERS) counts[f.key] = guests.filter(g => matchesFilter(g.status, f.key)).length;
+    return counts;
+  }, [guests]);
+
+  const visibleGuests = useMemo(() => {
+    const terms = normalizeText(query).split(/\s+/).filter(Boolean);
+    return guests.filter(g => {
+      if (!matchesFilter(g.status, statusFilter)) return false;
+      if (terms.length === 0) return true;
+      const text = guestSearchText(g);
+      return terms.every(t => text.includes(t));
     });
-    
-    return () => unsubscribe();
-  }, [selectedCampaign]);
+  }, [guests, query, statusFilter]);
 
   function showToast(msg: string, type: 'success' | 'error') {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
+  }
+
+  // Checks a guest in by hand (or undoes it). The row updates at once; the next
+  // refresh confirms it with the server and corrects it if the request failed.
+  async function handleCheckIn(guest: GuestData, undo: boolean) {
+    const name = guest.name || 'Guest';
+    setCheckingInId(guest.id);
+    setGuests(prev => prev.map(g => g.id !== guest.id ? g : {
+      ...g,
+      status: undo ? (g.confirmedAt ? 'confirmed' : 'invited') : 'arrived',
+      arrivedAt: undo ? null : ({ seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 } as any),
+    }));
+    try {
+      const res = await authedFetch('/api/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guestId: guest.id, undo }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok && res.status !== 409) throw new Error(data.error || 'Check-in failed');
+      showToast(
+        undo ? `${name}: check-in undone` : res.status === 409 ? `${name} was already checked in` : `${name} checked in`,
+        'success',
+      );
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Check-in failed', 'error');
+    } finally {
+      setCheckingInId(null);
+      refresh();
+    }
   }
 
   async function handleCreateCampaign(e: React.FormEvent) {
@@ -246,6 +342,7 @@ function AdminDashboardContent() {
         emailImageUrl: data.emailImageUrl || '',
         emailMessage: data.emailMessage || ''
       });
+      refresh();
       showToast('Campaign created!', 'success');
     } catch (err) {
       showToast('Failed to create campaign', 'error');
@@ -282,6 +379,7 @@ function AdminDashboardContent() {
       
       setSelectedCampaign(null);
       setGuests([]);
+      refresh();
       showToast('Campaign deleted successfully', 'success');
     } catch (err) {
       showToast('Failed to delete campaign', 'error');
@@ -301,6 +399,7 @@ function AdminDashboardContent() {
         body: JSON.stringify({ guestId }),
       });
       if (!res.ok) throw new Error('Failed to delete guest');
+      refresh();
       showToast('Guest deleted', 'success');
     } catch (err) {
       showToast('Failed to delete guest', 'error');
@@ -387,6 +486,7 @@ function AdminDashboardContent() {
                             setSelectedCampaign(null);
                             setGuests([]);
                           }
+                          refresh();
                           showToast('Campaign deleted', 'success');
                         } catch {
                           showToast('Failed to delete campaign', 'error');
@@ -484,7 +584,7 @@ function AdminDashboardContent() {
                   <p className="text-[10px] font-bold text-white uppercase tracking-widest truncate">{user.email?.split('@')[0]}</p>
                 </div>
               </div>
-              <button onClick={() => signOut(auth)} className="text-[10px] text-gray-500 hover:text-red-400 transition font-bold tracking-widest uppercase">Logout</button>
+              <button onClick={async () => { await logout(); router.push('/login'); }} className="text-[10px] text-gray-500 hover:text-red-400 transition font-bold tracking-widest uppercase">Logout</button>
            </div>
            
             <button
@@ -601,6 +701,52 @@ function AdminDashboardContent() {
 
               {/* Guest Table */}
               <div className="bg-white/[0.02] border border-white/5 backdrop-blur-3xl rounded-[2.5rem] overflow-hidden shadow-2xl transition-all duration-700 hover:border-white/10">
+                {guests.length > 0 && (
+                  <div className="p-6 border-b border-white/5 space-y-4">
+                    <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
+                      <div className="relative flex-1 max-w-xl">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 text-sm" aria-hidden="true">🔍</span>
+                        <input
+                          type="search"
+                          value={query}
+                          onChange={e => setQuery(e.target.value)}
+                          placeholder="Search by name, email or category…"
+                          aria-label="Search guests"
+                          className="w-full bg-white/[0.03] border border-white/10 rounded-2xl pl-12 pr-10 py-3 text-sm text-white placeholder-gray-600 outline-none focus:border-white/30 focus:bg-white/[0.05] transition-all duration-300"
+                        />
+                        {query && (
+                          <button
+                            type="button"
+                            onClick={() => setQuery('')}
+                            aria-label="Clear search"
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white text-xs transition"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {FILTERS.map(f => (
+                          <button
+                            key={f.key}
+                            type="button"
+                            onClick={() => setStatusFilter(f.key)}
+                            className={`text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-full border transition ${
+                              statusFilter === f.key
+                                ? 'bg-white text-black border-white'
+                                : 'bg-white/[0.03] text-gray-400 border-white/10 hover:border-white/30 hover:text-white'
+                            }`}
+                          >
+                            {f.label} <span className="opacity-60 ml-1">{filterCounts[f.key]}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-gray-600 uppercase tracking-[0.2em]">
+                      Showing {visibleGuests.length} of {guests.length} guests
+                    </p>
+                  </div>
+                )}
                 {guests.length === 0 ? (
                   <div className="py-40 text-center">
                     <div className="text-6xl mb-6 grayscale opacity-20">🎟️</div>
@@ -609,12 +755,27 @@ function AdminDashboardContent() {
                   </div>
                 ) : (() => {
                   const extraKeys = Array.from(new Set(guests.flatMap(g => Object.keys(g.extraFields ?? {}))));
+                  if (visibleGuests.length === 0) {
+                    return (
+                      <div className="py-24 text-center">
+                        <p className="text-white font-display text-lg font-bold tracking-tight">No guests match</p>
+                        <p className="text-gray-600 text-[10px] mt-2 uppercase tracking-[0.2em]">Try a different name or clear the filters</p>
+                        <button
+                          type="button"
+                          onClick={() => { setQuery(''); setStatusFilter('all'); }}
+                          className="mt-6 text-[10px] font-bold uppercase tracking-widest px-5 py-2.5 rounded-full border border-white/10 text-gray-300 hover:border-white/30 hover:text-white transition"
+                        >
+                          Clear search and filters
+                        </button>
+                      </div>
+                    );
+                  }
                   return (
                     <div className="overflow-x-auto custom-scrollbar">
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="bg-white/5 border-b border-white/5">
-                            {['', 'Guest Name', 'Email Index', 'Profile', 'Status', ...extraKeys, 'Registered', ''].map((h, i) => (
+                            {['', 'Guest Name', 'Email Index', 'Profile', 'Status', 'Arrival', ...extraKeys, 'Registered', ''].map((h, i) => (
                               <th key={i} className={`${i === 0 ? 'w-16 px-4' : 'px-8'} py-6 text-[10px] text-gray-500 uppercase tracking-[0.3em] font-bold whitespace-nowrap font-display`}>
                                 {h}
                               </th>
@@ -622,10 +783,10 @@ function AdminDashboardContent() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/[0.03]">
-                          {guests.map((guest) => {
+                          {visibleGuests.map((guest) => {
                             const badge = STATUS_BADGE[guest.status] ?? STATUS_BADGE.invited;
                             return (
-                              <tr key={guest.id} className={`hover:bg-white/[0.03] transition-all duration-300 group ${guest.parentId ? 'bg-white/[0.01]' : ''}`}>
+                              <tr key={guest.id} className={`hover:bg-white/[0.03] transition-all duration-300 group ${guest.status === 'arrived' ? 'bg-emerald-500/[0.05]' : guest.parentId ? 'bg-white/[0.01]' : ''}`}>
                                 <td className="px-4 py-6 whitespace-nowrap">
                                   <div className="flex items-center justify-center">
                                     {guest.portraitUrl ? (
@@ -667,9 +828,34 @@ function AdminDashboardContent() {
                                 </td>
                                 <td className="px-8 py-6">
                                   <span className={`text-[9px] font-bold px-3 py-1.5 rounded-full border whitespace-nowrap tracking-widest
-                                    ${guest.status === 'arrived' ? 'bg-white/10 border-white/20 text-white' : 'bg-transparent border-white/10 text-gray-500'}`}>
+                                    ${guest.status === 'arrived' ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300' : 'bg-transparent border-white/10 text-gray-500'}`}>
                                     {badge.label.toUpperCase()}
                                   </span>
+                                </td>
+                                <td className="px-8 py-6 whitespace-nowrap">
+                                  {guest.status === 'arrived' ? (
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-sm font-mono text-emerald-300" suppressHydrationWarning>{formatArrival(guest.arrivedAt)}</span>
+                                      <button
+                                        type="button"
+                                        disabled={checkingInId === guest.id}
+                                        onClick={() => handleCheckIn(guest, true)}
+                                        className="text-[9px] text-gray-600 hover:text-red-400 uppercase tracking-widest font-bold transition disabled:opacity-40"
+                                        title="Undo this check-in"
+                                      >
+                                        Undo
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      disabled={checkingInId === guest.id}
+                                      onClick={() => handleCheckIn(guest, false)}
+                                      className="text-[10px] font-bold px-4 py-2 rounded-xl bg-white text-black hover:bg-gray-200 transition active:scale-95 disabled:opacity-50 uppercase tracking-widest"
+                                    >
+                                      Check in
+                                    </button>
+                                  )}
                                 </td>
                                 {extraKeys.map(key => (
                                   <td key={key} className="px-8 py-6 text-xs text-gray-400 whitespace-nowrap font-mono">
@@ -749,7 +935,7 @@ function AdminDashboardContent() {
         <AddGuestModal 
           campaignId={selectedCampaign.id} 
           guests={guests}
-          onGuestAdded={(g: GuestData) => { setShowAdd(false); showToast('Guest added!', 'success'); }} 
+          onGuestAdded={(g: GuestData) => { setShowAdd(false); refresh(); showToast('Guest added!', 'success'); }} 
           onClose={() => setShowAdd(false)} 
         />
       )}
@@ -758,6 +944,7 @@ function AdminDashboardContent() {
           campaignId={selectedCampaign.id}
           onImported={(newGuests) => {
             setShowImport(false);
+            refresh();
             showToast(`${newGuests.length} guests imported!`, 'success');
           }}
           onClose={() => setShowImport(false)}
@@ -798,6 +985,7 @@ function AdminDashboardContent() {
               showToast(`Successfully dispatched ${success} invitations!`, 'success');
             }
             setShowEmailModal(false);
+            refresh();
           }}
           onClose={() => setShowEmailModal(false)}
         />
@@ -807,9 +995,8 @@ function AdminDashboardContent() {
         <EditGuestModal
           guest={editingGuest}
           onGuestUpdated={(updated) => {
-            // Updated directly in Firestore, but let's refresh locally if needed
-            // Actually AdminDashboard has listeners or re-fetches
             setShowEdit(false);
+            refresh();
             setEditingGuest(null);
             showToast('Registry updated!', 'success');
           }}

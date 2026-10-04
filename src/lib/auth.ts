@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuth } from 'firebase-admin/auth';
 import type { Firestore } from 'firebase-admin/firestore';
-import { getAdminApp } from '@/lib/firebase-admin';
 import { RsvpConfigError } from '@/lib/rsvp-token';
-import { isAllowlistConfigured, isAllowlisted } from '@/lib/admin-allowlist';
+import { AuthConfigError, SESSION_COOKIE, isKnownAdmin, readSessionToken } from '@/lib/admin-session';
 
 /** An error that should be returned to the caller with a specific HTTP status. */
 export class ApiError extends Error {
@@ -13,71 +11,50 @@ export class ApiError extends Error {
 }
 
 export interface AdminUser {
+  /** Same as `email`; kept so callers have a stable identifier. */
   uid: string;
-  /** Lower-cased, verified email address from the Firebase ID token. */
+  /** Lower-cased email address from the signed session cookie. */
   email: string;
 }
 
-/** Throws a 503 when ADMIN_EMAILS is unset, so every admin request is refused. */
-export function requireAllowlistConfigured(): void {
-  if (!isAllowlistConfigured()) {
-    console.error('[auth] ADMIN_EMAILS is not set; refusing all admin API requests.');
-    throw new ApiError(503, 'Admin access is not configured on this server.');
-  }
-}
-
 /**
- * Verifies the Firebase ID token sent as `Authorization: Bearer <token>` and
- * checks the account against the ADMIN_EMAILS allowlist. Throws ApiError.
+ * Reads the signed session cookie set at login and confirms the person is still
+ * listed in ADMIN_LOGINS. Throws ApiError (401) when there is no valid session.
  */
 export async function requireAdmin(req: NextRequest): Promise<AdminUser> {
-  const match = /^Bearer\s+(.+)$/i.exec(req.headers.get('authorization') ?? '');
-  if (!match) throw new ApiError(401, 'Authentication required.');
+  const email = readSessionToken(req.cookies.get(SESSION_COOKIE)?.value);
+  if (!email) throw new ApiError(401, 'Authentication required.');
 
-  let decoded;
-  try {
-    decoded = await getAuth(getAdminApp()).verifyIdToken(match[1]);
-  } catch {
-    throw new ApiError(401, 'Your session is invalid or has expired. Please sign in again.');
+  // Removing someone from ADMIN_LOGINS ends their session on the next request.
+  if (!isKnownAdmin(email)) {
+    throw new ApiError(401, 'Your session is no longer valid. Please sign in again.');
   }
 
-  if (!decoded.email || !decoded.email_verified) {
-    throw new ApiError(403, 'A verified email address is required.');
-  }
-
-  const email = decoded.email.toLowerCase();
-  requireAllowlistConfigured();
-  if (!isAllowlisted(email)) {
-    throw new ApiError(403, 'This account is not authorised to manage events.');
-  }
-
-  return { uid: decoded.uid, email };
+  return { uid: email, email };
 }
 
 /**
- * Loads a campaign and ensures the signed-in admin owns it. A missing campaign
- * and someone else's campaign are indistinguishable to the caller.
+ * Loads a campaign. Everyone listed in ADMIN_LOGINS shares all campaigns (it is
+ * a small trusted team), so this only checks that the campaign exists.
  */
-export async function getOwnedCampaign(db: Firestore, campaignId: string, user: AdminUser) {
-  const snap = await db.collection('campaigns').doc(campaignId).get();
-  const data = snap.data();
-  if (!snap.exists || !data || String(data.ownerEmail ?? '').toLowerCase() !== user.email) {
-    throw new ApiError(404, 'Campaign not found');
-  }
+export async function getCampaign(db: Firestore, campaignId: string) {
+  const snap = campaignId ? await db.collection('campaigns').doc(campaignId).get() : null;
+  const data = snap?.data();
+  if (!snap || !snap.exists || !data) throw new ApiError(404, 'Campaign not found');
   return { id: snap.id, data };
 }
 
-/** Loads a guest together with its (owned) campaign. */
-export async function getOwnedGuest(db: Firestore, guestId: string, user: AdminUser) {
+/** Loads a guest together with its campaign. */
+export async function getGuest(db: Firestore, guestId: string) {
   const snap = await db.collection('guests').doc(guestId).get();
   const data = snap.data();
   if (!snap.exists || !data) throw new ApiError(404, 'Guest not found');
-  const campaign = await getOwnedCampaign(db, String(data.campaignId ?? ''), user);
+  const campaign = await getCampaign(db, String(data.campaignId ?? ''));
   return { ref: snap.ref, data, campaign };
 }
 
 export function handleApiError(err: unknown, label: string): NextResponse {
-  if (err instanceof ApiError || err instanceof RsvpConfigError) {
+  if (err instanceof ApiError || err instanceof RsvpConfigError || err instanceof AuthConfigError) {
     return NextResponse.json({ error: err.message }, { status: err.status });
   }
   console.error(`${label} error:`, err);

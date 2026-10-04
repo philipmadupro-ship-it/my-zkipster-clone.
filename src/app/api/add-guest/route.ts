@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import QRCode from 'qrcode';
 import { getAdminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import { requireAdmin, getOwnedCampaign, handleApiError } from '@/lib/auth';
+import { requireAdmin, getCampaign, handleApiError } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     }
 
     const db = getAdminDb();
-    await getOwnedCampaign(db, campaignId, user);
+    await getCampaign(db, campaignId);
 
     const docRef = db.collection('guests').doc();
     const id = docRef.id;

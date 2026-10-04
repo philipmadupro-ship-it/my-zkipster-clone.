@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
-import { requireAdmin, getOwnedCampaign, handleApiError } from '@/lib/auth';
+import { requireAdmin, getCampaign, handleApiError } from '@/lib/auth';
 import { createMailTransport, escapeHtml, getBaseUrl, safeImageUrl } from '@/lib/email';
 import { requireRsvpSecret, signGuestToken } from '@/lib/rsvp-token';
 
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     const db = getAdminDb();
 
     // 1. Fetch Campaign Details (and confirm the caller owns it)
-    const { data: campaign } = await getOwnedCampaign(db, campaignId, user);
+    const { data: campaign } = await getCampaign(db, campaignId);
 
     // 2. Setup Nodemailer
     const transporter = createMailTransport();

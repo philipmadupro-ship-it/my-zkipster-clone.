@@ -1,34 +1,57 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
-import { onIdTokenChanged, User } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
-interface AuthContextType {
-  user: User | null;
-  loading: boolean;
+export interface AuthUser {
+  email: string;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
+interface AuthContextType {
+  user: AuthUser | null;
+  loading: boolean;
+  /** Re-checks the session with the server (call after logging in). */
+  refresh: () => Promise<void>;
+  logout: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  loading: true,
+  refresh: async () => {},
+  logout: async () => {},
+});
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // onIdTokenChanged (not onAuthStateChanged) so the app notices when an account
-    // becomes verified: the login page refreshes the token after activation.
-    const unsubscribe = onIdTokenChanged(auth, (firebaseUser) => {
-      // The server and Firestore rules only trust verified emails, so an
-      // email/password account that hasn't verified yet counts as signed out.
-      setUser(firebaseUser?.emailVerified ? firebaseUser : null);
+  const refresh = useCallback(async () => {
+    try {
+      const res = await fetch('/api/auth/session', { credentials: 'same-origin' });
+      if (res.ok) {
+        const data = await res.json();
+        setUser({ email: data.email });
+      } else {
+        setUser(null);
+      }
+    } catch {
+      setUser(null);
+    } finally {
       setLoading(false);
-    });
-    return () => unsubscribe();
+    }
   }, []);
 
+  const logout = useCallback(async () => {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => undefined);
+    setUser(null);
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, loading, refresh, logout }}>
       {children}
     </AuthContext.Provider>
   );

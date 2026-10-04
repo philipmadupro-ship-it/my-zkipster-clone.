@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
-import { requireAdmin, getOwnedCampaign, handleApiError } from '@/lib/auth';
+import { requireAdmin, getCampaign, handleApiError } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireAdmin(req);
+    await requireAdmin(req);
     const { campaignId } = await req.json();
 
     if (!campaignId || typeof campaignId !== 'string') {
@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     }
 
     const db = getAdminDb();
-    await getOwnedCampaign(db, campaignId, user);
+    await getCampaign(db, campaignId);
 
     // 1. Delete the campaign document
     await db.collection('campaigns').doc(campaignId).delete();

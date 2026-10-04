@@ -1,19 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
-import { requireAdmin, getOwnedGuest, handleApiError } from '@/lib/auth';
+import { requireAdmin, getGuest, handleApiError } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireAdmin(req);
+    await requireAdmin(req);
     const { guestId, firstName, lastName, email, category, portraitUrl } = await req.json();
 
     if (!guestId || typeof guestId !== 'string') {
       return NextResponse.json({ error: 'guestId is required' }, { status: 400 });
     }
 
-    const { ref } = await getOwnedGuest(getAdminDb(), guestId, user);
+    const { ref } = await getGuest(getAdminDb(), guestId);
 
     const updateData = {
       firstName: firstName?.trim() || '',
