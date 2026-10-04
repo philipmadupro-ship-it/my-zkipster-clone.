@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
+import { requireAdmin, handleApiError } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {
+    // Any allowlisted staff member may check guests in at the door, so this
+    // checks the allowlist but not campaign ownership.
+    await requireAdmin(req);
+
     const { guestId } = await req.json();
 
-    if (!guestId) {
+    if (!guestId || typeof guestId !== 'string') {
       return NextResponse.json({ error: 'guestId is required' }, { status: 400 });
     }
 
@@ -21,7 +26,7 @@ export async function POST(req: NextRequest) {
     const data = doc.data()!;
 
     if (data.status === 'arrived') {
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'Already checked in',
         arrivedAt: data.arrivedAt,
         name: data.name,
@@ -37,7 +42,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, name: data.name, email: data.email });
   } catch (err) {
-    console.error('checkin error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(err, 'checkin');
   }
 }

@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
+import { requireAdmin, handleApiError } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
+// Used by the door scanner only, so it is restricted to signed-in staff.
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }>}) {
   try {
+    await requireAdmin(req);
+
     const { id } = await params;
     const db = getAdminDb();
     const doc = await db.collection('guests').doc(id).get();
@@ -23,6 +29,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       arrivedAt: data.arrivedAt?.toDate?.()?.toISOString() ?? data.arrivedAt ?? null,
     });
   } catch (err) {
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    return handleApiError(err, 'guest lookup');
   }
 }

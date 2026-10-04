@@ -1,25 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
+import { requireAdmin, getOwnedGuest, handleApiError } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
+    const user = await requireAdmin(req);
     const { guestId, firstName, lastName, email, category, portraitUrl } = await req.json();
 
-    if (!guestId) {
+    if (!guestId || typeof guestId !== 'string') {
       return NextResponse.json({ error: 'guestId is required' }, { status: 400 });
     }
 
-    const db = getAdminDb();
-    const docRef = db.collection('guests').doc(guestId);
-    const doc = await docRef.get();
+    const { ref } = await getOwnedGuest(getAdminDb(), guestId, user);
 
-    if (!doc.exists) {
-      return NextResponse.json({ error: 'Guest not found' }, { status: 404 });
-    }
-
-    const updateData: any = {
+    const updateData = {
       firstName: firstName?.trim() || '',
       lastName: lastName?.trim() || '',
       email: email?.trim() || '',
@@ -29,11 +25,10 @@ export async function POST(req: NextRequest) {
       name: `${firstName?.trim() || ''} ${lastName?.trim() || ''}`.trim(),
     };
 
-    await docRef.update(updateData);
+    await ref.update(updateData);
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('update-guest error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(err, 'update-guest');
   }
 }

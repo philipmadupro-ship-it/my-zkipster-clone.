@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, Component } from 'react';
+import { authedFetch } from '@/lib/api-client';
 import { useRouter } from 'next/navigation';
 import UngaroLogo from './UngaroLogo';
 import { signOut } from 'firebase/auth';
@@ -205,7 +206,7 @@ function AdminDashboardContent() {
     if (!newCampaignName.trim() || !user?.email) return;
     setIsCreatingCampaign(true);
     try {
-      const res = await fetch('/api/create-campaign', {
+      const res = await authedFetch('/api/create-campaign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -272,7 +273,7 @@ function AdminDashboardContent() {
     
     setIsDeleting(true);
     try {
-      const res = await fetch('/api/delete-campaign', {
+      const res = await authedFetch('/api/delete-campaign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ campaignId: selectedCampaign.id }),
@@ -294,7 +295,7 @@ function AdminDashboardContent() {
     
     setIsDeleting(true);
     try {
-      const res = await fetch('/api/delete-guest', {
+      const res = await authedFetch('/api/delete-guest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ guestId }),
@@ -376,7 +377,7 @@ function AdminDashboardContent() {
                       (async () => {
                         setIsDeleting(true);
                         try {
-                          const res = await fetch('/api/delete-campaign', {
+                          const res = await authedFetch('/api/delete-campaign', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ campaignId: c.id }),
@@ -536,7 +537,7 @@ function AdminDashboardContent() {
                          (async () => {
                            try {
                              showToast('Dispatching 1-Week remiders...', 'success');
-                             const res = await fetch('/api/send-reminders', {
+                             const res = await authedFetch('/api/send-reminders', {
                                method: 'POST',
                                headers: { 'Content-Type': 'application/json' },
                                body: JSON.stringify({ campaignId: selectedCampaign.id, origin: window.location.origin }),

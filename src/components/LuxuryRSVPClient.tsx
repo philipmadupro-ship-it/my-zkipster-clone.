@@ -26,7 +26,7 @@ interface Campaign {
   emailImageUrl?: string;
 }
 
-export default function LuxuryRSVPClient({ guest, campaign }: { guest: Guest, campaign: Campaign | null }) {
+export default function LuxuryRSVPClient({ guest, campaign, token }: { guest: Guest, campaign: Campaign | null, token: string }) {
   const [name, setName] = useState(guest.name || '');
   const [state, setState] = useState<'idle' | 'loading' | 'confirmed' | 'error'>(
     guest.status !== 'invited' ? 'confirmed' : 'idle'
@@ -41,7 +41,7 @@ export default function LuxuryRSVPClient({ guest, campaign }: { guest: Guest, ca
       const res = await fetch('/api/confirm-rsvp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ guestId: guest.id, name }),
+        body: JSON.stringify({ token, name }),
       });
       const data = await res.json();
       if (res.status === 409) {

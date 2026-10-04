@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { authedFetch } from '@/lib/api-client';
 import { useAuth } from '@/context/AuthContext';
 import type { GuestData } from './AddGuestModal';
 
@@ -154,7 +155,7 @@ export default function ImportGuestsModal({ campaignId, onImported, onClose }: P
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/bulk-import', {
+      const res = await authedFetch('/api/bulk-import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ guests: rows, campaignId, ownerEmail: user.email.toLowerCase() }),

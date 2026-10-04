@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
-import nodemailer from 'nodemailer';
 import QRCode from 'qrcode';
+import { requireAdmin, getOwnedCampaign, handleApiError } from '@/lib/auth';
+import { createMailTransport, escapeHtml, getBaseUrl, safeImageUrl } from '@/lib/email';
+import { requireRsvpSecret, signGuestToken } from '@/lib/rsvp-token';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
+    const user = await requireAdmin(req);
     const { campaignId, origin } = await req.json();
 
     if (!campaignId) {
@@ -17,34 +20,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email service not configured on host.' }, { status: 500 });
     }
 
+    // Fail before sending anything rather than emailing links we can't sign.
+    requireRsvpSecret();
+
     const db = getAdminDb();
-    
-    // 1. Fetch Campaign Details
-    const campaignDoc = await db.collection('campaigns').doc(campaignId).get();
-    if (!campaignDoc.exists) {
-      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
-    }
-    const campaign = campaignDoc.data()!;
+
+    // 1. Fetch Campaign Details (and confirm the caller owns it)
+    const { data: campaign } = await getOwnedCampaign(db, String(campaignId), user);
 
     // 2. Fetch Guests
     const guestsSnapshot = await db.collection('guests').where('campaignId', '==', campaignId).get();
     const guests = guestsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
 
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.office365.com',
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-      tls: {
-        ciphers: 'SSLv3',
-        rejectUnauthorized: false
-      }
-    });
+    const transporter = createMailTransport();
 
-    const host = origin || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const host = getBaseUrl(origin);
+    const campaignName = escapeHtml(campaign.name);
+    const eventVenue = escapeHtml(campaign.eventVenue);
 
     let sentCount = 0;
     
@@ -62,9 +54,10 @@ export async function POST(req: NextRequest) {
     const isFr = campaign.language === 'fr';
     const poweredByText = isFr ? 'Communications événementielles par' : 'Event communications powered by';
     
-    const decorativeImageHtml = campaign.emailImageUrl 
+    const decorativeImageUrl = safeImageUrl(campaign.emailImageUrl);
+    const decorativeImageHtml = decorativeImageUrl
       ? `<div style="text-align: center; margin-top: 40px; margin-bottom: 20px;">
-           <img src="${campaign.emailImageUrl}" alt="Event Decoration" style="max-width: 100%; height: auto; border-radius: 4px;" />
+           <img src="${decorativeImageUrl}" alt="Event Decoration" style="max-width: 100%; height: auto; border-radius: 4px;" />
          </div>` 
       : '';
 
@@ -88,13 +81,13 @@ export async function POST(req: NextRequest) {
       try {
         if (guest.status === 'pending' || guest.status === 'invited') {
           // --- SEND PENDING REMINDER ---
-          const rsvpLink = `${host}/rsvp/${guest.id}`;
+          const rsvpLink = `${host}/rsvp/${signGuestToken(guest.id)}`;
           const greeting = isFr ? 'Cher/Chère' : 'Dear';
           const viewInviteText = isFr ? 'Accéder à l\'Invitation Numérique' : 'Access Digital Invitation';
           
           let defaultMessage = isFr
-            ? `<p style="font-size: 15px; margin-bottom: 40px;">Veuillez noter que notre événement approche. Si vous ne l'avez pas encore fait, veuillez confirmer votre présence au défilé <strong>${campaign.name}</strong> le plus tôt possible.</p>`
-            : `<p style="font-size: 15px; margin-bottom: 40px;">Please note that our event is approaching. If you have not done so already, please confirm your attendance for the <strong>${campaign.name}</strong> runway show at your earliest convenience.</p>`;
+            ? `<p style="font-size: 15px; margin-bottom: 40px;">Veuillez noter que notre événement approche. Si vous ne l'avez pas encore fait, veuillez confirmer votre présence au défilé <strong>${campaignName}</strong> le plus tôt possible.</p>`
+            : `<p style="font-size: 15px; margin-bottom: 40px;">Please note that our event is approaching. If you have not done so already, please confirm your attendance for the <strong>${campaignName}</strong> runway show at your earliest convenience.</p>`;
 
           let messageBody = defaultMessage;
           if (campaign.emailMessage) {
@@ -107,7 +100,7 @@ export async function POST(req: NextRequest) {
             <div style="background-color: ${bgColor}; padding: 40px 10px;">
               <div style="background-color: ${bgColor}; font-family: 'Times New Roman', Times, serif; max-width: 600px; margin: 0 auto; padding: 40px; border: 1px solid ${borderColor}; color: ${textColor}; line-height: 1.6;">
                 ${headerLogoHtml}
-                <p style="font-size: 16px; margin-bottom: 30px;">${greeting} ${guest.firstName || guest.name || ''},</p>
+                <p style="font-size: 16px; margin-bottom: 30px;">${greeting} ${escapeHtml(guest.firstName || guest.name || '')},</p>
                 
                 <div style="margin-bottom: 40px;">
                   ${messageBody}
@@ -152,8 +145,8 @@ export async function POST(req: NextRequest) {
           const titleText = isFr ? 'RAPPEL D\'ACCÈS À L\'ÉVÉNEMENT' : 'EVENT ACCESS REMINDER';
           const greeting = isFr ? 'Cher/Chère' : 'Dear';
           const thankYouMsg = isFr 
-            ? `Ceci est un rappel que l'événement <strong>${campaign.name}</strong> approche. Veuillez trouver ci-joint votre pass d'accès numérique.` 
-            : `This is a reminder that the <strong>${campaign.name}</strong> is approaching. Please find your digital access pass attached below.`;
+            ? `Ceci est un rappel que l'événement <strong>${campaignName}</strong> approche. Veuillez trouver ci-joint votre pass d'accès numérique.`
+            : `This is a reminder that the <strong>${campaignName}</strong> is approaching. Please find your digital access pass attached below.`;
           const guestSelection = isFr ? 'Sélection des Invités' : 'Guest Selection';
           const venueAccess = isFr ? 'Accès au Lieu' : 'Venue Access';
           const seeInvitation = isFr ? 'Voir l\'Invitation' : 'See Invitation';
@@ -162,16 +155,16 @@ export async function POST(req: NextRequest) {
             <div style="background-color: ${bgColor}; padding: 40px 10px;">
               <div style="background-color: ${bgColor}; font-family: 'Times New Roman', Times, serif; max-width: 600px; margin: 0 auto; padding: 40px; border: 1px solid ${borderColor}; color: ${textColor}; line-height: 1.6;">
                 ${headerLogoHtml}
-                <p style="font-size: 16px; margin-bottom: 20px;">${greeting} ${guest.name},</p>
+                <p style="font-size: 16px; margin-bottom: 20px;">${greeting} ${escapeHtml(guest.name)},</p>
                 <p style="font-size: 15px; margin-bottom: 30px;">${thankYouMsg}</p>
                 
                 <div style="background-color: ${boxBg}; padding: 40px; text-align: center; margin-bottom: 40px; border: 1px solid ${boxBorder};">
                   <img src="cid:qrcode" alt="Entry QR Code" style="width: 200px; height: 200px; margin-bottom: 20px;" />
                   <p style="text-transform: uppercase; font-size: 10px; letter-spacing: 0.2em; color: #8b7355; margin-bottom: 5px;">${guestSelection}</p>
-                  <p style="font-size: 14px; font-weight: bold; margin-bottom: 20px;">${guest.name}</p>
+                  <p style="font-size: 14px; font-weight: bold; margin-bottom: 20px;">${escapeHtml(guest.name)}</p>
                   <div style="display: inline-block; border-top: 1px solid ${borderColor}; padding-top: 15px;">
                     <p style="text-transform: uppercase; font-size: 9px; letter-spacing: 0.1em; color: #999;">${venueAccess}</p>
-                    <p style="font-size: 12px; color: ${textColor};">${campaign.eventVenue || seeInvitation}</p>
+                    <p style="font-size: 12px; color: ${textColor};">${eventVenue || seeInvitation}</p>
                   </div>
                 </div>
 
@@ -214,7 +207,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, sentCount });
   } catch (err) {
-    console.error('send-reminders error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(err, 'send-reminders');
   }
 }

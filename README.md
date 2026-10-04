@@ -60,6 +60,35 @@ From Firebase Console -> Project Settings -> Service Accounts -> Generate new pr
 - `client_email` -> `FIREBASE_CLIENT_EMAIL`
 - `private_key` -> `FIREBASE_PRIVATE_KEY`
 
+## Access control
+
+- **Login** is email + password (with sign-up, "forgot password" and email verification) or Google.
+  There is no passwordless/magic-link sign-in. In Firebase Console → Authentication → Sign-in method,
+  enable **Email/Password** and leave **Email link (passwordless sign-in)** switched off. New
+  password accounts must verify their email before they can sign in, because the API and Firestore
+  rules only trust verified addresses.
+- **Admin API routes** (campaigns, guests, imports, dispatch, reminders, check-in) require a signed-in
+  Firebase user. The dashboard sends the user's ID token and the server verifies it.
+- Set **`ADMIN_EMAILS`** to the people allowed in (full addresses and/or `@domain` entries). With it
+  unset, all admin requests are refused. Anyone can create a Firebase account, so this list is what
+  actually decides who can send email from your SMTP account.
+- Campaign-level actions (edit, delete, import, send) also require that the caller **owns** the
+  campaign; the owner is taken from the verified token, never from the request body.
+- Public routes, by design: the RSVP/invitation pages, `/c/<slug>` claim page, `/api/lookup-guest`
+  and `/api/confirm-rsvp`.
+- **RSVP links are signed.** Invitation and reminder emails link to `/rsvp/<guestId>.<signature>`
+  (HMAC-SHA256 with `RSVP_LINK_SECRET`; generate one with `openssl rand -base64 48`). The guest ID alone
+  no longer opens an RSVP, which matters because it is also what the QR code encodes. The server
+  recomputes the signature, so nothing extra is stored.
+  - Links sent **before** this change are bare guest IDs. They keep working until you set
+    `RSVP_ALLOW_LEGACY_LINKS=false`. Reminders go out with signed links, so re-send reminders first,
+    then flip the switch.
+  - Rotating `RSVP_LINK_SECRET` invalidates every signed link already sent.
+  - Run the token tests with `npm test`.
+- **Firestore rules** live in `firestore.rules`. Clients may only read their own campaigns and those
+  campaigns' guests; all writes go through the API. Deploy them with
+  `firebase deploy --only firestore:rules` (or paste them into Firebase Console → Firestore → Rules).
+
 ## Notes
 
 - `FROM_EMAIL` must be a sender that Resend allows for your account/domain.

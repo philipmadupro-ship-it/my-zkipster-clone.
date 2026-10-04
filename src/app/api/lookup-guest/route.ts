@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
+import { signGuestToken, requireRsvpSecret } from '@/lib/rsvp-token';
+import { handleApiError } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {
@@ -8,6 +10,8 @@ export async function POST(req: NextRequest) {
     if (!campaignId || (!firstName && !lastName)) {
       return NextResponse.json({ error: 'campaignId and name are required' }, { status: 400 });
     }
+
+    requireRsvpSecret();
 
     const searchFirst = firstName.trim().toLowerCase();
     const searchLast = lastName.trim().toLowerCase();
@@ -47,13 +51,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "We couldn't find an invitation under that name." }, { status: 404 });
     }
 
+    // Hand back the signed token for the RSVP URL, never the raw guest ID (which is also the QR payload).
     return NextResponse.json({
-      id: matchedDoc.id,
+      token: signGuestToken(matchedDoc.id),
       name: matchedDoc.name,
       status: matchedDoc.status,
     });
   } catch (err) {
-    console.error('lookup-guest error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(err, 'lookup-guest');
   }
 }

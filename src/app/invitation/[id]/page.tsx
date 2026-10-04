@@ -1,21 +1,27 @@
 import { getAdminDb } from '@/lib/firebase-admin';
 import { notFound } from 'next/navigation';
 import LuxuryInvitation from '@/components/LuxuryInvitation';
+import { tryResolveGuestId } from '@/lib/rsvp-token';
 
 interface Props {
+  // Despite the folder name, this is the signed token (`<guestId>.<signature>`), not a bare guest ID.
   params: Promise<{ id: string }>;
 }
 
 export default async function InvitationPage({ params }: Props) {
-  const { id } = await params;
+  const { id: token } = await params;
+  const isDemo = token === 'demo';
+  const id = isDemo ? null : tryResolveGuestId(token);
+  if (!id && !isDemo) notFound();
+
   const db = getAdminDb();
-  
+
   let guest = null;
   let campaign = null;
 
   try {
-    const doc = await db.collection('guests').doc(id).get();
-    if (doc.exists) {
+    const doc = id ? await db.collection('guests').doc(id).get() : null;
+    if (doc?.exists) {
       const data = doc.data()!;
       guest = {
         id: doc.id,
@@ -47,7 +53,7 @@ export default async function InvitationPage({ params }: Props) {
   }
 
   // Allow "demo" as a special ID to see the elegant UI even without a database entry
-  if (!guest && id === 'demo') {
+  if (!guest && isDemo) {
     guest = {
       id: 'demo-id',
       name: 'Yann',

@@ -2,18 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import QRCode from 'qrcode';
 import { getAdminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
+import { requireAdmin, getOwnedCampaign, handleApiError } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const { firstName, lastName, email, category, campaignId, ownerEmail, portraitUrl, parentId } = await req.json();
+    const user = await requireAdmin(req);
+    const { firstName, lastName, email, category, campaignId, portraitUrl, parentId } = await req.json();
 
-    if (!firstName || !lastName || !campaignId || !ownerEmail) {
-      return NextResponse.json({ error: 'firstName, lastName, campaignId, and ownerEmail are required' }, { status: 400 });
+    if (!firstName || !lastName || !campaignId) {
+      return NextResponse.json({ error: 'firstName, lastName and campaignId are required' }, { status: 400 });
     }
 
     const db = getAdminDb();
+    await getOwnedCampaign(db, campaignId, user);
+
     const docRef = db.collection('guests').doc();
     const id = docRef.id;
 
@@ -40,17 +44,13 @@ export async function POST(req: NextRequest) {
       confirmedAt: null,
       arrivedAt: null,
       createdAt: FieldValue.serverTimestamp(),
-      ownerEmail: ownerEmail.trim().toLowerCase(),
+      ownerEmail: user.email, // taken from the verified token, never from the request body
     };
 
     await docRef.set(guest);
 
     return NextResponse.json({ ...guest, createdAt: new Date().toISOString() });
   } catch (err) {
-    console.error('add-guest error:', err);
-    return NextResponse.json({ 
-      error: 'Failed to register guest', 
-      details: err instanceof Error ? err.message : 'Unknown error' 
-    }, { status: 500 });
+    return handleApiError(err, 'add-guest');
   }
 }

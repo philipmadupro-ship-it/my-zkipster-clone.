@@ -17,7 +17,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
+      // The server and Firestore rules only trust verified emails, so an
+      // email/password account that hasn't verified yet counts as signed out.
+      setUser(firebaseUser?.emailVerified ? firebaseUser : null);
       setLoading(false);
     });
     return () => unsubscribe();

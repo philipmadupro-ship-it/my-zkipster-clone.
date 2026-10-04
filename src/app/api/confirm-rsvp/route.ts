@@ -1,17 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import nodemailer from 'nodemailer';
 import QRCode from 'qrcode';
+import { createMailTransport, escapeHtml, getBaseUrl, safeImageUrl } from '@/lib/email';
+import { resolveGuestId } from '@/lib/rsvp-token';
+import { handleApiError } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
+// Public endpoint: guests confirm from the signed link in their invitation email.
 export async function POST(req: NextRequest) {
   try {
-    const { guestId, name, dietary, carService } = await req.json();
+    // `guestId` is the pre-signing field name, still sent by pages cached before the upgrade;
+    // resolveGuestId only accepts a bare ID while RSVP_ALLOW_LEGACY_LINKS isn't 'false'.
+    const { token, guestId: legacyGuestId, name } = await req.json();
 
-    if (!guestId || !name) {
-      return NextResponse.json({ error: 'guestId and name are required' }, { status: 400 });
+    const cleanName = typeof name === 'string' ? name.trim().slice(0, 120) : '';
+    if (!cleanName || (typeof token !== 'string' && typeof legacyGuestId !== 'string')) {
+      return NextResponse.json({ error: 'token and name are required' }, { status: 400 });
+    }
+
+    const guestId = resolveGuestId(token ?? legacyGuestId);
+    if (!guestId) {
+      return NextResponse.json({ error: 'This invitation link is not valid.' }, { status: 404 });
     }
 
     const db = getAdminDb();
@@ -29,7 +40,7 @@ export async function POST(req: NextRequest) {
     }
 
     await docRef.update({
-      name: name.trim(),
+      name: cleanName,
       status: 'confirmed',
       confirmedAt: FieldValue.serverTimestamp(),
     });
@@ -45,19 +56,10 @@ export async function POST(req: NextRequest) {
       const campaignDoc = await db.collection('campaigns').doc(campaignId).get();
       const campaign = campaignDoc.exists ? campaignDoc.data()! : { name: 'Emanuel Ungaro FW26' };
 
-      const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST || 'smtp.office365.com',
-        port: parseInt(process.env.SMTP_PORT || '587'),
-        secure: process.env.SMTP_SECURE === 'true',
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
-        },
-        tls: {
-          ciphers: 'SSLv3',
-          rejectUnauthorized: false
-        }
-      });
+      const transporter = createMailTransport();
+      const safeName = escapeHtml(cleanName);
+      const campaignName = escapeHtml(campaign.name);
+      const eventVenue = escapeHtml(campaign.eventVenue);
 
       const qrCodeBuffer = await QRCode.toBuffer(guestId, {
         errorCorrectionLevel: 'H',
@@ -77,20 +79,21 @@ export async function POST(req: NextRequest) {
       const isFr = campaign.language === 'fr';
       const titleText = isFr ? 'RSVP CONFIRMÉ' : 'RSVP CONFIRMED';
       const greeting = isFr ? 'Cher/Chère' : 'Dear';
-      const thankYouMsg = isFr ? `Merci d'avoir confirmé votre présence au défilé <strong>${campaign.name}</strong>. Votre pass d'accès numérique est joint ci-dessous.` : `Thank you for confirming your attendance at the <strong>${campaign.name}</strong>. Your digital access pass is attached below.`;
+      const thankYouMsg = isFr ? `Merci d'avoir confirmé votre présence au défilé <strong>${campaignName}</strong>. Votre pass d'accès numérique est joint ci-dessous.` : `Thank you for confirming your attendance at the <strong>${campaignName}</strong>. Your digital access pass is attached below.`;
       const guestSelection = isFr ? 'Sélection des Invités' : 'Guest Selection';
       const venueAccess = isFr ? 'Accès au Lieu' : 'Venue Access';
       const poweredByText = isFr ? 'Communications événementielles par' : 'Event communications powered by';
       const seeInvitation = isFr ? 'Voir l\'Invitation' : 'See Invitation';
 
-      const decorativeImageHtml = campaign.emailImageUrl 
+      const decorativeImageUrl = safeImageUrl(campaign.emailImageUrl);
+      const decorativeImageHtml = decorativeImageUrl
         ? `<div style="text-align: center; margin-top: 40px; margin-bottom: 20px;">
-             <img src="${campaign.emailImageUrl}" alt="Event Decoration" style="max-width: 100%; height: auto; border-radius: 4px;" />
+             <img src="${decorativeImageUrl}" alt="Event Decoration" style="max-width: 100%; height: auto; border-radius: 4px;" />
            </div>` 
         : '';
 
-      const origin = req.headers.get('origin');
-      const host = origin || process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+      // Public route: never trust the caller's Origin header for links in the email.
+      const host = getBaseUrl();
 
       // Footer Logo Logic
       let footerLogoHtml = `<p style="font-family: 'Futura', 'Century Gothic', 'Arial Black', sans-serif; font-size: 28px; color: ${logoColor}; font-weight: bold; text-transform: lowercase; letter-spacing: -0.02em; margin: 0; line-height: 1;">emanuel ungaro</p>`;
@@ -112,16 +115,16 @@ export async function POST(req: NextRequest) {
         <div style="background-color: ${bgColor}; padding: 40px 10px;">
           <div style="background-color: ${bgColor}; font-family: 'Times New Roman', Times, serif; max-width: 600px; margin: 0 auto; padding: 40px; border: 1px solid ${borderColor}; color: ${textColor}; line-height: 1.6;">
             ${headerLogoHtml}
-            <p style="font-size: 16px; margin-bottom: 20px;">${greeting} ${name.trim()},</p>
+            <p style="font-size: 16px; margin-bottom: 20px;">${greeting} ${safeName},</p>
             <p style="font-size: 15px; margin-bottom: 40px;">${thankYouMsg}</p>
             
             <div style="background-color: ${boxBg}; padding: 40px; text-align: center; margin-bottom: 40px; border: 1px solid ${boxBorder};">
               <img src="cid:qrcode" alt="Entry QR Code" style="width: 200px; height: 200px; margin-bottom: 20px;" />
               <p style="text-transform: uppercase; font-size: 10px; letter-spacing: 0.2em; color: #8b7355; margin-bottom: 5px;">${guestSelection}</p>
-              <p style="font-size: 14px; font-weight: bold; margin-bottom: 20px;">${name.trim()}</p>
+              <p style="font-size: 14px; font-weight: bold; margin-bottom: 20px;">${safeName}</p>
               <div style="display: inline-block; border-top: 1px solid ${borderColor}; padding-top: 15px;">
                 <p style="text-transform: uppercase; font-size: 9px; letter-spacing: 0.1em; color: #999;">${venueAccess}</p>
-                <p style="font-size: 12px; color: ${textColor};">${campaign.eventVenue || seeInvitation}</p>
+                <p style="font-size: 12px; color: ${textColor};">${eventVenue || seeInvitation}</p>
               </div>
             </div>
 
@@ -155,7 +158,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, qrCodeUrl: data.qrCodeUrl });
   } catch (err) {
-    console.error('confirm-rsvp error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(err, 'confirm-rsvp');
   }
 }

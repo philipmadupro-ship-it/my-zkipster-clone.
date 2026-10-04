@@ -31,7 +31,7 @@ export default function ClaimForm({ campaignId }: { campaignId: string }) {
       }
 
       // Guest found! Redirect them to their personal RSVP confirmation page
-      router.push(`/rsvp/${data.id}`);
+      router.push(`/rsvp/${data.token}`);
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
