@@ -62,17 +62,25 @@ From Firebase Console -> Project Settings -> Service Accounts -> Generate new pr
 
 ## Access control
 
-- **Login** is email + password, or Google. There is **no sign-up page** and no magic-link sign-in:
-  accounts are created by an administrator with `npm run create-user -- someone@ungaro.com` (prompts
-  for a password; needs the Firebase Admin credentials in `.env.local`). The account is created
-  already email-verified, so no email is sent. In Firebase Console → Authentication → Sign-in method,
-  enable **Email/Password** and leave **Email link (passwordless sign-in)** switched off.
-  - The API and Firestore rules only trust **verified** emails and the `ADMIN_EMAILS` list, so
-    accounts created some other way (for example by calling Firebase's sign-up endpoint directly)
-    can't use the app. If your Firebase project offers it, also turn off sign-up under
-    Authentication → Settings → User actions.
-  - "Forgot password?" still sends Firebase's reset email (from `noreply@<project>.firebaseapp.com`,
-    check spam). Re-running `create-user` for an existing address resets the password directly.
+- **Login** is email + password, or Google. There is **no sign-up page** and no magic-link sign-in.
+  In Firebase Console → Authentication → Sign-in method, enable **Email/Password** and leave
+  **Email link (passwordless sign-in)** switched off.
+- **Creating a login (easiest):** Firebase Console → Authentication → Users → **Add user**, and
+  choose an email and password there. Accounts made this way start out "unverified"; the first time
+  that person signs in, the server marks the account verified **if the address is written out in full
+  in `ADMIN_EMAILS`** (e.g. `press@ungaro.com`). No email is sent and nothing needs running.
+  - A `@domain` entry in `ADMIN_EMAILS` does **not** auto-activate accounts, because anyone who
+    registers an address on that domain could then promote themselves. For those, use the script
+    below.
+  - Add the address to `ADMIN_EMAILS` only **after** its account exists. Until then, someone calling
+    Firebase's public sign-up endpoint directly could register that address first. If your Firebase
+    project offers it, also turn off sign-up under Authentication → Settings → User actions.
+- **Creating a login (script):** `npm run create-user -- someone@ungaro.com` prompts for a password
+  and creates the account already verified (or resets the password of an existing one). It needs the
+  Firebase Admin credentials in `.env.local`.
+- The API and Firestore rules only trust **verified** emails and the `ADMIN_EMAILS` list.
+- "Forgot password?" sends Firebase's reset email (from `noreply@<project>.firebaseapp.com`, check
+  spam). If it doesn't arrive, delete the user in the Console and add them again with a new password.
 - **Admin API routes** (campaigns, guests, imports, dispatch, reminders, check-in) require a signed-in
   Firebase user. The dashboard sends the user's ID token and the server verifies it.
 - Set **`ADMIN_EMAILS`** to the people allowed in (full addresses and/or `@domain` entries). With it
