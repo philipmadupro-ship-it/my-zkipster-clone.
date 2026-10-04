@@ -62,6 +62,11 @@ From Firebase Console -> Project Settings -> Service Accounts -> Generate new pr
 
 ## Access control
 
+- **Login** is email + password (with sign-up, "forgot password" and email verification) or Google.
+  There is no passwordless/magic-link sign-in. In Firebase Console → Authentication → Sign-in method,
+  enable **Email/Password** and leave **Email link (passwordless sign-in)** switched off. New
+  password accounts must verify their email before they can sign in, because the API and Firestore
+  rules only trust verified addresses.
 - **Admin API routes** (campaigns, guests, imports, dispatch, reminders, check-in) require a signed-in
   Firebase user. The dashboard sends the user's ID token and the server verifies it.
 - Set **`ADMIN_EMAILS`** to the people allowed in (full addresses and/or `@domain` entries). With it
